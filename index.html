@@ -33,7 +33,7 @@
   .none{display:none}
   table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
   th,td{border:1px solid var(--line);padding:6px 8px;text-align:right;white-space:nowrap}
-  th{background:var(--head);color:#eaf3f1;font-weight:600;font-size:12px;position:sticky;top:0}
+  th{background:var(--head);color:#eaf3f1;font-weight:600;font-size:12px;position:sticky;top:0;z-index:4}
   th small,td small{display:block;font-weight:400;opacity:.85;font-size:10.5px}
   th.l,td.l{text-align:left}th.lab{background:var(--lab)}th.c,td.c{text-align:center}
   tbody tr:nth-child(even){background:var(--soft)}
@@ -71,6 +71,7 @@
   details.help summary{cursor:pointer;font-weight:700;padding:12px 0;color:var(--brand-d)}
   details.help div{padding-bottom:14px;color:var(--muted);font-size:13px}
   details.help code{background:#e5edeb;padding:1px 5px;border-radius:4px}
+  .ctrlbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:12px}
   .file-in{display:none}
   .warn{background:var(--amber-soft);border:1px solid #e6c98f;color:#7a4708;border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:12px}
 </style>
@@ -81,119 +82,67 @@
 
   <div class="toolbar">
     <button class="pri" onclick="saveState()">💾 Lưu / 保存</button>
-    <div class="impbox">
-      <button onclick="document.getElementById('imp').click()">⬆ Nhập công lệnh</button>
-      <label>công đoạn</label><select id="impCenter" class="mini"></select>
-    </div>
-    <button onclick="exportExcel()">⬇ Xuất Excel (đủ sheet)</button>
-    <button onclick="downloadTemplate()">📄 Tải mẫu / 下载模板</button>
+    <button onclick="exportExcel()">⬇ Xuất tất cả (Excel)</button>
     <button class="ghost" onclick="loadDemo(true)">↺ Nạp lại mẫu</button>
     <input id="imp" class="file-in" type="file" accept=".xls,.xlsx,.csv" onchange="importExcel(event)">
     <span class="spacer"></span><span class="status" id="status">—</span>
   </div>
 
   <div class="tabs">
-    <div class="tab on" data-t="0" onclick="tab(0)"><span class="n">1</span>Công đoạn &amp; Công lệnh (tính giá thành)</div>
-    <div class="tab" data-t="1" onclick="tab(1)"><span class="n">2</span>Kết quả giá thành</div>
-    <div class="tab" data-t="2" onclick="tab(2)"><span class="n">3</span>报表 / Báo cáo</div>
+    <div class="tab on" data-t="0" onclick="tab(0)"><span class="n">1</span>成本报表 / Báo cáo giá thành</div>
+    <div class="tab" data-t="1" onclick="tab(1)"><span class="n">2</span>财务报表 / Báo cáo tài chính</div>
   </div>
 
-  <!-- TAB 1 -->
+  <!-- 成本报表 / Cost reports -->
   <section class="panel" id="p0">
-    <h2>Công đoạn (trung tâm chi phí) / 成本中心</h2>
-    <p class="hint">Mỗi công đoạn có 2 đơn giá theo giờ: <b>Nhân công</b> và <b>CP chung</b>. Đơn giá = Số tiền tháng ÷ Tổng giờ công tháng.</p>
-    <div class="centers" id="centers"></div>
-    <button onclick="addCenter()">+ Thêm công đoạn</button>
-    <h3>Bảng đơn giá giờ theo tháng / 工资制费率表 &nbsp;
-      <span class="co" style="font-weight:400;color:var(--muted);font-size:12px">Lọc năm/年:</span>
-      <select id="rateYear" class="mini" onchange="renderRates()"></select></h3>
-    <div class="warn">Đã nạp sẵn số thật T1–T6/2026 (注塑 &amp; 裝配) từ bảng 工資製費率表. Sửa nếu cần; đơn giá tự tính lại.</div>
-    <div class="scroll"><table id="rtbl"><thead><tr>
-      <th class="l">Công đoạn<small>成本中心</small></th><th>Tháng<small>月份</small></th>
-      <th class="lab">Tiền nhân công<small>人工金额</small></th><th>Tiền CP chung<small>制费金额</small></th>
-      <th>Tổng giờ công<small>投入工时</small></th><th class="lab">Đơn giá NC/giờ<small>人工单价</small></th>
-      <th>Đơn giá CP chung/giờ<small>制费单价</small></th><th>Tổng ĐG gia công/giờ<small>合计单价</small></th><th></th>
-    </tr></thead><tbody id="rbody"></tbody></table></div>
-    <div class="addrow"><button onclick="addRate()">+ Thêm dòng tỷ lệ</button></div>
-
-    <h3 style="margin-top:22px">Công lệnh sản xuất &amp; phân bổ chi phí / 生产工单 &amp; 成本分摊</h3>
-    <p class="hint">Mỗi công lệnh chọn <b>công đoạn</b> + <b>tháng</b> → tự lấy <b>đơn giá NC/giờ</b> và <b>đơn giá CP chung/giờ</b> từ bảng trên; chi phí phân bổ = <b>giờ công × đơn giá</b>. Nhận bán thành phẩm: chọn công lệnh nguồn ở <b>Nhận BTP từ</b> và nhập <b>SL nhận</b>.</p>
-    <div class="scroll"><table id="otbl"><thead><tr>
-      <th class="l">Mã CL<small>工单编号</small></th><th class="l">Mã liệu<small>料号</small></th><th class="l">Tên SP<small>品名</small></th>
-      <th class="l">Công đoạn<small>成本中心</small></th><th>Tháng<small>月份</small></th>
-      <th>SL SX<small>数量</small></th><th>NVL trực tiếp<small>原材料</small></th>
-      <th class="l">Nhận BTP từ<small>领用半成品</small></th><th>SL nhận<small>领用数</small></th>
-      <th>Giờ công<small>工时</small></th>
-      <th class="lab">ĐG NC/giờ<small>人工单价</small></th><th>ĐG CP chung/giờ<small>制费单价</small></th>
-      <th class="lab">Nhân công<small>人工</small></th><th>CP chung<small>制费</small></th><th>BTP nhận<small>半成品</small></th>
-      <th>Tổng giá thành<small>总成本</small></th><th>Đơn giá<small>单位成本</small></th><th></th>
-    </tr></thead><tbody id="obody"></tbody></table></div>
-    <div class="addrow"><button class="pri" onclick="addOrder()">+ Thêm công lệnh</button></div>
-  </section>
-
-  <!-- TAB 2: RESULTS -->
-  <section class="panel none" id="p1">
-    <h2>Kết quả giá thành / 成本结果</h2>
-    <div class="kpis" id="kpis"></div>
-    <div class="scroll"><table id="restbl"><thead><tr>
-      <th class="l">Mã CL<small>工单</small></th><th class="l">Mã SP<small>产品编号</small></th><th class="l">Tên SP<small>品名</small></th><th class="l">Công đoạn<small>成本中心</small></th><th>Tháng<small>月</small></th>
-      <th>SL<small>数量</small></th><th>NVL TT<small>原材料</small></th><th>BTP nhận<small>半成品</small></th>
-      <th class="lab">Nhân công<small>人工</small></th><th>CP chung<small>制费</small></th><th>Tổng<small>总成本</small></th><th>Đơn giá<small>单位</small></th>
-    </tr></thead><tbody id="resbody"></tbody><tfoot id="resfoot"></tfoot></table></div>
-    <details class="help"><summary>Công thức / 公式</summary><div>
-      <p><b>Đơn giá NC/giờ 人工单价</b> = 人工金额 ÷ 投入工时 · <b>Đơn giá CP chung/giờ 制费单价</b> = 制费金额 ÷ 投入工时.</p>
-      <p><b>Nhân công 人工</b> = 工时 × 人工单价 · <b>CP chung 制费</b> = 工时 × 制费单价.</p>
-      <p><b>BTP nhận vào 半成品</b> = 单位成本(nguồn) × SL nhận · <b>Tổng 总成本</b> = 原材料 + 半成品 + 人工 + 制费 · <b>Đơn giá 单位成本</b> = 总成本 ÷ 数量.</p>
-    </div></details>
-  </section>
-
-  <!-- TAB 3: REPORTS -->
-  <section class="panel none" id="p2">
     <div class="subtabs" id="subtabs">
-      <div class="subtab on" data-r="rc" onclick="rtab('rc')">成本中心汇总 · TT chi phí</div>
-      <div class="subtab" data-r="rr" onclick="rtab('rr')">工资制费率表 · Đơn giá</div>
-      <div class="subtab" data-r="ro" onclick="rtab('ro')">工单成本明细 · Chi tiết CL</div>
+      <div class="subtab on" data-r="rc" onclick="rtab('rc')">成本中心/工资制费率 · Đơn giá &amp; TTCP</div>
       <div class="subtab" data-r="rm" onclick="rtab('rm')">料工费比较 · Liệu–Công–Phí</div>
-      <div class="subtab" data-r="ri" onclick="rtab('ri')">库存成本汇总 · Tồn kho</div>
-      <div class="subtab" data-r="rg" onclick="rtab('rg')">总账金额核对 · Đối chiếu</div>
       <div class="subtab" data-r="oh" onclick="rtab('oh')">制造费用明细 · Chi phí SX chung</div>
       <div class="subtab" data-r="cs" onclick="rtab('cs')">成本结构图 · Cơ cấu chi phí</div>
-      <div class="subtab" data-r="oc" onclick="rtab('oc')">费用核对 · Đối chiếu CP chung</div>
-      <div class="subtab" data-r="al" onclick="rtab('al')">费用分摊 · Phân bổ CP</div>
-      <div class="subtab" data-r="nx" onclick="rtab('nx')">月度进销存 · NXT tháng</div>
+      <div class="subtab" data-r="ag" onclick="rtab('ag')">庫存貨齡 · Tuổi tồn kho</div>
+      <div class="subtab" data-r="cmp" onclick="rtab('cmp')">对比分析 · So sánh năm/kỳ</div>
     </div>
     <div class="repwrap">
-      <div id="r_rc" class="on"><div class="rephead"><h3>成本中心分摊汇总 / Tổng hợp phân bổ trung tâm chi phí</h3>
-        <span class="co">Tháng/月:</span><select id="rcMonth" class="mini"></select></div>
-        <div class="scroll" id="rcBox"></div></div>
-      <div id="r_rr"><div class="rephead"><h3>工资制费率表 / Bảng đơn giá lương–chi phí</h3><span class="co">年/Năm:</span><select id="rrYear" class="mini"></select><span class="co">单位成本 = 金额 ÷ 工时</span></div>
+      <div id="r_rc" class="on"><div class="rephead"><h3>① 成本中心汇总 / Tổng hợp trung tâm chi phí</h3>
+        <span class="co">Tháng/月:</span><select id="rcMonth" class="mini"></select><button onclick="exportRep(['rcBox','rrBox'],'ttcp-don-gia.xlsx')" style="margin-left:auto">⬇ Excel</button></div>
+        <div class="scroll" id="rcBox"></div>
+        <div class="rephead" style="margin-top:16px"><h3>② 工资制费率表 (cả năm) / Đơn giá lương–chi phí</h3><span class="co">年/Năm:</span><select id="rrYear" class="mini"></select><span class="co">单位成本 = 金额 ÷ 工时 · kéo ngang xem 12 tháng →</span></div>
         <div class="scroll" id="rrBox"></div></div>
-      <div id="r_ro"><div class="rephead"><h3>工单成本明细 / Chi tiết giá thành công lệnh</h3></div>
-        <div class="scroll" id="roBox"></div></div>
-      <div id="r_rm"><div class="rephead"><h3>料工费比较 / So sánh Liệu–Công–Phí</h3><span class="co">年/Năm:</span><select id="mgfYear" class="mini"></select><span class="co">VND · % 占销货收入 / % doanh thu theo tháng</span></div>
-        <div class="scroll" id="rmBox"></div></div>
-      <div id="r_ri"><div class="rephead"><h3>库存成本汇总 / Tổng hợp giá thành tồn kho</h3><span class="co">期末 = 期初+入库+领用+调整 · Cuối kỳ tự tính</span></div>
-        <div class="scroll" id="riBox"></div></div>
-      <div id="r_rg"><div class="rephead"><h3>总账金额核对 / Đối chiếu số dư sổ cái</h3><span class="co">差额 = 总账 − 成本模块</span></div>
-        <div class="scroll" id="rgBox"></div></div>
+      <div id="r_rm"><div class="rephead"><h3>料工费比较 / So sánh Liệu–Công–Phí</h3><span class="co">年/Năm:</span><select id="mgfYear" class="mini"></select><span class="co">VND · % theo tháng</span><button onclick="exportRep(['rmBox'],'lieu-cong-phi.xlsx')" style="margin-left:auto">⬇ Excel</button></div>
+        <div class="scroll" id="rmBox"></div><div id="mgfChart" style="margin-top:16px"></div></div>
       <div id="r_oh"><div class="rephead"><h3>制造费用明细表 / Chi phí sản xuất chung</h3>
         <span class="co">年/Năm:</span><select id="ohYear" class="mini"></select>
-        <span class="co">部门/Bộ phận:</span><select id="ohSheet" class="mini"></select><span class="co">VND</span></div>
-        <div class="scroll" id="ohBox"></div></div>
+        <span class="co">部门/Bộ phận:</span><select id="ohSheet" class="mini"></select><button onclick="exportRep(['ohBox'],'chi-phi-sx-chung.xlsx')" style="margin-left:auto">⬇ Excel</button></div>
+        <div class="scroll" id="ohBox"></div><div id="ohChart" style="margin-top:16px"></div></div>
       <div id="r_cs"><div class="rephead"><h3>成本结构图 / Biểu đồ cơ cấu chi phí</h3>
         <span class="co">Top khoản - 年/Năm:</span><select id="csYear" class="mini"></select>
-        <span class="co">部门/Bộ phận:</span><select id="csDept" class="mini"></select></div>
+        <span class="co">部门/Bộ phận:</span><select id="csDept" class="mini"></select>
+        <button onclick="exportCS()" style="margin-left:auto">⬇ Excel</button></div>
         <div id="csBox"></div></div>
-      <div id="r_oc"><div class="rephead"><h3>费用核对 / Đối chiếu CP chung ↔ công đoạn</h3>
-        <span class="co">年/Năm:</span><select id="ocYear" class="mini"></select></div>
-        <div class="scroll" id="ocBox"></div></div>
-      <div id="r_al"><div class="rephead"><h3>制造费用分摊 / Phân bổ CP SX chung vào công đoạn</h3>
-        <span class="co">年/Năm:</span><select id="alYear" class="mini"></select>
-        <button onclick="applyAllocation();renderRates();refresh();renderRepAlloc();setStatus('已套用分摊→单价 / Đã áp phân bổ vào đơn giá')" style="padding:5px 10px;font-size:12px">Áp dụng → đơn giá 制费</button></div>
-        <div class="scroll" id="alBox"></div></div>
-      <div id="r_nx"><div class="rephead"><h3>月度进销存 / Nhập–Xuất–Tồn theo tháng</h3>
-        <span class="co">月份/Tháng:</span><select id="nxtMonth" class="mini"></select><span class="co">Cơ sở tính giá thành tháng mới</span></div>
-        <div class="scroll" id="nxBox"></div></div>
+      <div id="r_ag"><div class="rephead"><h3>庫存成本貨齡分析表 / Phân tích tuổi tồn kho</h3>
+        <span class="co">月份/Tháng:</span><select id="agMonth" class="mini"></select>
+        <button onclick="document.getElementById('agImp').click()">⬆ Nhập file tháng</button>
+        <input id="agImp" class="file-in" type="file" accept=".xls,.xlsx" onchange="importAging(event)">
+        <button onclick="exportRep(['agBox'],'ton-kho-hoa-qua.xlsx')" style="margin-left:auto">⬇ Excel</button></div>
+        <div id="agBox"></div></div>
+      <div id="r_cmp"><h3 style="margin:0 0 8px">对比分析 / So sánh qua các năm &amp; kỳ</h3>
+        <div class="ctrlbar"><span class="co">指标/Chỉ tiêu:</span><select id="cmpMetric" class="mini"></select>
+          <span class="co">年/Năm:</span><select id="cmpYear" class="mini"></select>
+          <span class="co">月/Tháng:</span><select id="cmpMonth" class="mini"></select>
+          <span class="co" style="margin-left:auto">同比=cùng kỳ năm trước · 环比=tháng trước</span><button onclick="exportRep(['cmpTbl','cmpCum'],'so-sanh.xlsx')">⬇ Excel</button></div>
+        <h4 style="margin:4px 0 6px;color:#0a4f48">① So sánh tháng đã chọn / 单月同比·环比</h4>
+        <div class="scroll" id="cmpTbl"></div>
+        <h4 style="margin:14px 0 6px;color:#0a4f48">② Lũy kế từ đầu năm / 本年累计 (T1 → tháng chọn) vs cùng kỳ năm trước</h4>
+        <div class="scroll" id="cmpCum"></div>
+        <div id="cmpChart" style="margin-top:16px"></div></div>
+    </div>
+  </section>
+  <section class="panel none" id="p1">
+    <h2>财务报表 / Báo cáo tài chính</h2>
+    <p class="hint">Khu vực dành cho báo cáo tài chính. Dữ liệu sẽ được thêm sau / 财务报表数据稍后提供。</p>
+    <div style="background:var(--soft);border:1px dashed var(--line);border-radius:10px;padding:28px;text-align:center;color:var(--muted)">
+      Chưa có dữ liệu — bạn gửi bảng, tôi sẽ dựng báo cáo tài chính vào đây.<br>暂无数据 / Bảng cân đối, Kết quả KD, Lưu chuyển tiền tệ…
     </div>
   </section>
 </div>
@@ -218,6 +167,9 @@ function otherDeptsList(){return OHDATA.sheets.map(s=>s.id).filter(id=>id!=='制
 function allocOH(cid,ym){const y=ym.slice(0,4);if(!OHDATA.data[y])return null;const own=cid==='V81010'?EPDEPTS:cid==='V81020'?LRDEPTS:null;if(!own)return null;
   const ownS=own.reduce((s,d)=>s+(deptMonthTot(d,ym)||0),0);const othS=otherDeptsList().reduce((s,d)=>s+(deptMonthTot(d,ym)||0),0);return ownS+0.5*othS;}
 function applyAllocation(){state.rates.forEach(r=>{const a=allocOH(r.center,r.month);if(a!=null)r.ohAmt=Math.round(a);});}
+const AGINGDATA={"2026-06":{"month":"2026-06","totQ":218331874,"totA":89813770833,"imp":9564119389,"buckets":[{"name":"180天以內","qty":190728794,"amt":75288187267},{"name":"181-360天","qty":20300616,"amt":9922928356},{"name":"361-720天","qty":5373870,"amt":1793880642},{"name":"721-999天","qty":1693480,"amt":2486795610},{"name":"1000天以上","qty":234764,"amt":321978959}],"agedTotal":4602655209,"agedCount":436,"warn":[{"code":"總計：","name":"","ta":44906885417,"tq":109165762,"agedAmt":2301327605,"oldest":4,"imp":4782059694},{"code":"4MT0100062","name":"67mmTPU灌胶透明吸盤-66mm二維碼离型纸","ta":343314993,"tq":42648,"agedAmt":343314993,"oldest":3,"imp":343314993},{"code":"1LGCS00018","name":"SS-塑胶版车用杯架-M6螺杆-碳钢-镀黑锌-黑色","ta":273497333,"tq":77242,"agedAmt":273497333,"oldest":3,"imp":273497333},{"code":"1QTCS00017","name":"GM3523A-右铁件_RR-镀镍-银色","ta":233340414,"tq":24715,"agedAmt":233340414,"oldest":2,"imp":233340414},{"code":"900345Y","name":"PA66 SHENMA-原料-本色","ta":103943170,"tq":975000,"agedAmt":103943170,"oldest":2,"imp":103943170},{"code":"3012400073","name":"外箱-K=K-不打钉","ta":69082756,"tq":1883,"agedAmt":69082756,"oldest":2,"imp":69082756},{"code":"7SH6CD0012","name":"CPDC20; 车充單USB插孔_5V 3A 9V 2.22A","ta":64690932,"tq":1114,"agedAmt":64690932,"oldest":3,"imp":64690932},{"code":"1LMCS00017","name":"SS-WDEX V2连杆支架-异形六角螺母-碳钢-黑色","ta":59078448,"tq":52682,"agedAmt":59078448,"oldest":3,"imp":59078448},{"code":"1CTNB00010","name":"SS-环形磁铁组-帶定向","ta":57234977,"tq":6976,"agedAmt":57234977,"oldest":2,"imp":57234977},{"code":"3112300127","name":"IHW10-SP1越南缩小版彩盒(不含吊耳)08/23-350G单铜2专+4C印","ta":42090164,"tq":10683,"agedAmt":42090164,"oldest":3,"imp":42090164},{"code":"4MT1400144","name":"新模45mm花纹PVC铝管包胶","ta":37029093,"tq":6829,"agedAmt":37029093,"oldest":3,"imp":37029093},{"code":"1PJIR00048","name":"小铁片-无孔版背胶3M9080-不锈钢SUS410-新版LOGO丝印透明光油-电","ta":35632256,"tq":11997,"agedAmt":35632256,"oldest":4,"imp":35632256},{"code":"900350Y","name":"RABS-HLBK(GRS 70%PCR 黑色粒子)-原料","ta":34968000,"tq":752000,"agedAmt":34968000,"oldest":2,"imp":34968000},{"code":"900035Y","name":"PA66-本色-原料","ta":34572138,"tq":324291,"agedAmt":34572138,"oldest":2,"imp":34572138},{"code":"012BK04260","name":"主体旋转臂-镜面-PC-黑色","ta":31273193,"tq":9788,"agedAmt":31273193,"oldest":3,"imp":31273193},{"code":"515CR00066","name":"POP SOCKET PLATE圆型铁片保护膜含OPP袋PET-磨砂-透明(OP","ta":28924428,"tq":24318,"agedAmt":28924428,"oldest":3,"imp":28924428},{"code":"1LMCS00020","name":"SS-塑胶版车用杯架-碳钢M5黑色盲孔螺帽-黑色","ta":28649598,"tq":87446,"agedAmt":28649598,"oldest":3,"imp":28649598},{"code":"1DPIR00001","name":"SS-塑胶版车用杯架-手柄垫片-电镀环保黑锌黑色","ta":26973657,"tq":86775,"agedAmt":26973657,"oldest":3,"imp":26973657},{"code":"515OT00002","name":"Mag T notch保护膜-来料OPP袋印LOGO-OPP袋规格67*72*0","ta":25346617,"tq":18209,"agedAmt":25346617,"oldest":3,"imp":25346617},{"code":"3112200089","name":"UH4ODEX2-AT1越南彩盒10/22(不含黑色挂耳)-350G单铜4C+2","ta":24365994,"tq":3419,"agedAmt":24365994,"oldest":4,"imp":24365994},{"code":"1LMCS00021","name":"SS-塑胶版车用杯架-M6防松螺母碳钢-本色","ta":23169483,"tq":85220,"agedAmt":23169483,"oldest":3,"imp":23169483},{"code":"3112400002","name":"MAGHDGPS缩小版越南彩盒不含吊耳12/23-350G单铜5C印刷+哑膜+局","ta":22900322,"tq":5322,"agedAmt":22900322,"oldest":3,"imp":22900322},{"code":"3122300001","name":"IHW10吸塑-PET 0.55","ta":19993542,"tq":10628,"agedAmt":19993542,"oldest":3,"imp":19993542},{"code":"1CTIR00009","name":"N52磁铁-来料含K=K纸箱","ta":19872916,"tq":9349,"agedAmt":19872916,"oldest":3,"imp":19872916},{"code":"1THST00006","name":"內把手右彈簧(1105-18)-镀彩锌-银色","ta":19268143,"tq":16151,"agedAmt":19268143,"oldest":2,"imp":19268143},{"code":"1PJIR00050","name":"黑色平板铁片-带背胶3M9080-新版LOGO丝印透明光油-SECC电泳黑色","ta":18639749,"tq":2975,"agedAmt":18639749,"oldest":2,"imp":18639749},{"code":"3142500006","name":"79344CD 彩卡-300G灰铜对裱+正6反1C印刷+正面吸塑油","ta":17457039,"tq":8948,"agedAmt":17457039,"oldest":2,"imp":17457039},{"code":"1THST00003","name":"內把手左彈簧(1105-18)-镀彩锌-银色","ta":17157600,"tq":14298,"agedAmt":17157600,"oldest":2,"imp":17157600},{"code":"1DPCS00003","name":"SS-塑胶版车用杯架-内径6垫片碳鋼-本色","ta":15417211,"tq":85220,"agedAmt":15417211,"oldest":3,"imp":15417211},{"code":"3132400006","name":"MEMS2D-AP2纸内托空白无印刷-350G双铜","ta":15257900,"tq":8596,"agedAmt":15257900,"oldest":2,"imp":15257900},{"code":"3142400014","name":"BK735-3798 彩卡-300G灰铜对裱+正6反1C印刷+正哑胶","ta":13881150,"tq":5094,"agedAmt":13881150,"oldest":2,"imp":13881150},{"code":"1THST00009","name":"GM3523A-右弹簧-RR-镀彩锌-银色","ta":13670581,"tq":13907,"agedAmt":13670581,"oldest":2,"imp":13670581},{"code":"1CTQT00002","name":"APPLE-定向磁铁块-N48H银色","ta":12854327,"tq":926,"agedAmt":12854327,"oldest":4,"imp":12854327},{"code":"3041400120","name":"PE袋-PE打孔印刷黑色環保標誌","ta":12823821,"tq":10000,"agedAmt":12823821,"oldest":3,"imp":12823821},{"code":"049BK04261","name":"底座固定臂-PA-黑色","ta":12489001,"tq":9840,"agedAmt":12489001,"oldest":3,"imp":12489001},{"code":"049BK04262","name":"铁片垫圈-PA-黑色","ta":12489001,"tq":9840,"agedAmt":12489001,"oldest":3,"imp":12489001},{"code":"048BK00006","name":"金属四爪冷气出风口卡扣版-软夹脚-TPE-黑色","ta":11775427,"tq":5249,"agedAmt":11775427,"oldest":2,"imp":11775427},{"code":"3112400060","name":"MEMS2D-AP2配件盒印icon贴纸-350G单铜","ta":11206954,"tq":4372,"agedAmt":11206954,"oldest":2,"imp":11206954},{"code":"1TPSS00008","name":"双转动冷气出风口金属两爪-SK5镀镍-银色","ta":10790770,"tq":7876,"agedAmt":10790770,"oldest":2,"imp":10790770},{"code":"3022100014","name":"IHW10-SP1縮小版内箱印条码(10033991064079)-A3A-不打","ta":10093602,"tq":5073,"agedAmt":10093602,"oldest":3,"imp":10093602},{"code":"1PJIR00043","name":"黑色无孔圆铁片-背胶3M9080A-SECC镀锌板-新版LOGO丝印透明光油-电","ta":10028032,"tq":4834,"agedAmt":10028032,"oldest":2,"imp":10028032},{"code":"1QTAL00004","name":"装饰片-铝合金/喷沙100#银色/背胶3M9080","ta":9898820,"tq":4889,"agedAmt":9898820,"oldest":3,"imp":9898820},{"code":"005BK04126","name":"SS鹰眼夹具-球头版下盖-ABS-镜面和纹面-黑色","ta":9394930,"tq":3958,"agedAmt":9394930,"oldest":2,"imp":9394930},{"code":"1THST00020","name":"FD2929-RH_大彈簧-镀彩锌-银色","ta":8900756,"tq":10046,"agedAmt":8900756,"oldest":2,"imp":8900756},{"code":"3041400102","name":"PE袋-PE打孔印刷黑色環保標誌","ta":8696250,"tq":19325,"agedAmt":8696250,"oldest":4,"imp":8696250},{"code":"005BK04125","name":"SS鹰眼夹具-球头版上盖-ABS-镜面和纹面-黑色","ta":8308530,"tq":3833,"agedAmt":8308530,"oldest":2,"imp":8308530},{"code":"094BK04401","name":"B20AMPSPC-20.7mm球头转AMPS-PA-黑色","ta":8190924,"tq":3740,"agedAmt":8190924,"oldest":2,"imp":8190924},{"code":"3132000011","name":"UH4ODEX2-SP吸塑內托-PET 0.7","ta":7376999,"tq":3417,"agedAmt":7376999,"oldest":4,"imp":7376999},{"code":"3142300003","name":"MAGWDM越南大彩卡-磁铁印刷版12/22-350G单铜/5C印刷/过哑胶局部","ta":6731531,"tq":1166,"agedAmt":6731531,"oldest":4,"imp":6731531},{"code":"3172300007","name":"MAGHDGPS-RFID标签贴(033991046221)-纸","ta":6724081,"tq":5094,"agedAmt":6724081,"oldest":3,"imp":6724081},{"code":"D0YS000643","name":"MPMS-球头版主体_两侧印刷logo","ta":6717761,"tq":1208,"agedAmt":6717761,"oldest":2,"imp":6717761},{"code":"3171400307","name":"(透明)圆形贴纸-PVC","ta":6197245,"tq":88135,"agedAmt":6197245,"oldest":2,"imp":6197245},{"code":"3022400002","name":"MAGHDGPS縮小彩盒版内箱印条码(10033991046228)-A3A-不","ta":6054254,"tq":2740,"agedAmt":6054254,"oldest":3,"imp":6054254},{"code":"012BK04355","name":"MPMS-球头版主体-PC-黑色","ta":5942394,"tq":1888,"agedAmt":5942394,"oldest":2,"imp":5942394},{"code":"3012000046","name":"外箱-K=K-不打钉","ta":5928936,"tq":418,"agedAmt":5928936,"oldest":4,"imp":5928936},{"code":"005BK04430","name":"SS 15mm新螺母-ABS-黑色","ta":5831172,"tq":5612,"agedAmt":5831172,"oldest":2,"imp":5831172},{"code":"3152000012","name":"UH4ODEX2说明书04/20-对折四折-80G书纸单色双面印刷","ta":5818480,"tq":6789,"agedAmt":5818480,"oldest":4,"imp":5818480},{"code":"3152100009","name":"MAGHDGPS说明书3/21(风琴折后对折一折)-80G书纸","ta":5636757,"tq":5152,"agedAmt":5636757,"oldest":3,"imp":5636757},{"code":"092BK04344","name":"8165-主体-ABS-黑色","ta":5611356,"tq":578,"agedAmt":5611356,"oldest":2,"imp":5611356},{"code":"005BK00013","name":"SS-MAGVM2-PRO-支架底盖-ABS-黑色","ta":5510655,"tq":8664,"agedAmt":5510655,"oldest":3,"imp":5510655}]}};
+let agMonthSel=null;
+const FVDEFAULT={"製-間接人工薪資":"F","製-租金支出":"F","製-文具用品":"V","製-旅費":"V","製-運費":"V","製-郵電費":"F","製-修繕費":"V","製-廣告費":"V","製-水電瓦斯費":"V","製-保險費":"F","製-交際費":"V","製-捐贈":"F","製-稅捐":"F","製-呆帳損失":"V","製-折舊":"F","製-各項攤提":"F","製-伙食費":"F","製-職工福利":"F","製-研究發展費":"F","製-佣金支出":"V","製-訓練費":"F","製-進出口費用":"V","製-保全費":"F","製-勞務費":"F","製-產品保固費用":"V","製-專利費":"F","製-書報雜誌":"F","製-包裝費":"V","製-銀行手續費":"V","製-雜項購置":"V","製-權利金":"V","製-管理費":"F","製-樣品費":"V","製-消耗品費":"V","製-委外加工費":"V","製-檢驗費":"V","製-加工費":"V","製-模具費":"V","製-交通費":"V","製-其他費用":"V"};
 
 
 /* ===== helpers ===== */
@@ -244,7 +196,7 @@ function computeAll(){
 }
 
 /* ===== centers ===== */
-function renderCenters(){
+function renderCenters(){if(!document.getElementById("centers"))return;
   const box=document.getElementById('centers');box.innerHTML='';
   state.centers.forEach(c=>{const d=document.createElement('div');d.className='chip';
     d.innerHTML=`<input class="id" data-c="${c.id}" data-f="id" value="${esc(c.id)}" style="width:70px">
@@ -258,7 +210,7 @@ function delCenter(id){state.centers=state.centers.filter(c=>c.id!==id);renderCe
 /* ===== rate table ===== */
 function centerOpts(sel){return state.centers.map(c=>`<option value="${esc(c.id)}" ${c.id===sel?'selected':''}>${esc(c.id)} · ${esc(c.name)}</option>`).join('');}
 function allYears(){const s=new Set();state.rates.forEach(r=>s.add(String(r.month).slice(0,4)));return[...s].sort();}
-function renderRates(){
+function renderRates(){if(!document.getElementById("rbody"))return;
   const ys=document.getElementById('rateYear');const years=allYears();
   if(ys && ys.options.length!==years.length+1){const cur=ys.value;
     ys.innerHTML=`<option value="">Tất cả/全部</option>`+years.map(y=>`<option ${y===cur?'selected':''}>${y}</option>`).join('');
@@ -281,7 +233,7 @@ function delRate(id){state.rates=state.rates.filter(r=>r.id!==id);renderRates();
 /* ===== orders ===== */
 function monthOpts(sel){return allMonths().map(m=>`<option value="${m}" ${m===sel?'selected':''}>${m}</option>`).join('');}
 function sourceOpts(o){let out=`<option value="">— không —</option>`;state.orders.forEach(s=>{if(s.id!==o.id&&s.code)out+=`<option value="${esc(s.code)}" ${s.code===o.sourceCode?'selected':''}>${esc(s.code)}</option>`;});return out;}
-function renderOrders(){
+function renderOrders(){if(!document.getElementById("obody"))return;
   const tb=document.getElementById('obody');tb.innerHTML='';
   state.orders.forEach(o=>{const tr=document.createElement('tr');
     tr.innerHTML=`<td class="l"><input class="cell l" style="width:150px" data-o="${o.id}" data-f="code" value="${esc(o.code)}"></td>
@@ -314,7 +266,7 @@ function refresh(){
     const u=document.getElementById('ou-'+o.id);if(u){let f='';if(r.cycle)f=' <span class="flag cyc">循环/vòng lặp</span>';else if(r.miss)f=' <span class="flag mis">源?/nguồn?</span>';u.innerHTML=fmt(r.unit,2)+f;}});
   renderResults(c);
 }
-function renderResults(c){
+function renderResults(c){if(!document.getElementById("resbody"))return;
   const tb=document.getElementById('resbody');let sMat=0,sBtp=0,sLab=0,sOh=0,sTot=0;let rowsH='';
   state.orders.forEach(o=>{const r=c[o.id]||{};sMat+=N(o.matRaw);sBtp+=r.btp||0;sLab+=r.lab||0;sOh+=r.oh||0;sTot+=r.total||0;
     let f='';if(r.cycle)f=' <span class="flag cyc">循环</span>';else if(r.miss)f=' <span class="flag mis">源?</span>';
@@ -337,7 +289,7 @@ function renderResults(c){
 let cur='rc';let mgfYear='2026';
 function rtab(k){cur=k;document.querySelectorAll('.subtab').forEach(s=>s.classList.toggle('on',s.dataset.r===k));
   document.querySelectorAll('.repwrap>div').forEach(d=>d.classList.toggle('on',d.id==='r_'+k));renderReport(k);}
-function renderReport(k){({rc:renderRepCenter,rr:renderRepRate,ro:renderRepOrders,rm:renderRepMgf,ri:renderRepInv,rg:renderRepRecon,oh:renderRepOH,cs:renderRepCS,oc:renderRepOC,al:renderRepAlloc,nx:renderNXT}[k]||(()=>{}))();}
+function renderReport(k){({rc:()=>{renderRepCenter();renderRepRate();},rm:renderRepMgf,oh:renderRepOH,cs:renderRepCS,ag:renderAging,cmp:renderCompare}[k]||(()=>{}))();}
 
 function renderRepCenter(){
   const sel=document.getElementById('rcMonth');const ms=allMonths();
@@ -357,9 +309,11 @@ function renderRepRate(){
   if(ys && ys.options.length!==years.length){ys.innerHTML=years.map(y=>`<option ${y==='2026'?'selected':''}>${y}</option>`).join('');if(!ys.value&&years.includes('2026'))ys.value='2026';}
   const yr=(ys&&ys.value)||years[years.length-1]||'2026';
   const ms=Array.from({length:12},(_,i)=>yr+'-'+String(i+1).padStart(2,'0'));
-  let head=`<tr><th class="l" rowspan="2">成本中心<small>TT chi phí</small></th><th class="l" rowspan="2">成本项目<small>Khoản mục</small></th><th colspan="3" style="background:#0a4f48">全年合计<small>Cộng cả năm</small></th>`;
+  const rW0=140,rW1=140,rW2=120,rW3=80,rW4=100,rL1=rW0,rL2=rL1+rW1,rL3=rL2+rW2,rL4=rL3+rW3;
+  let head=`<tr><th class="l" rowspan="2" style="${sk(0,rW0,6)}background:var(--head)">成本中心<small>TT chi phí</small></th><th class="l" rowspan="2" style="${sk(rL1,rW1,6)}background:var(--head)">成本项目<small>Khoản mục</small></th><th colspan="3" style="${sk(rL2,rW2+rW3+rW4,6)}background:#0a4f48">全年合计<small>Cộng cả năm</small></th>`;
   ms.forEach(m=>head+=`<th colspan="3">${m.slice(5)}月/T${+m.slice(5)}</th>`);head+=`</tr><tr>`;
-  ['合计',...ms].forEach(()=>head+=`<th>金额<small>Tiền</small></th><th>工时<small>Giờ</small></th><th class="lab">单价<small>ĐG</small></th>`);head+=`</tr>`;
+  head+=`<th style="${sk(rL2,rW2,6)}background:var(--head)">金额<small>Tiền</small></th><th style="${sk(rL3,rW3,6)}background:var(--head)">工时<small>Giờ</small></th><th class="lab" style="${sk(rL4,rW4,6)}background:var(--lab)">单价<small>ĐG</small></th>`;
+  ms.forEach(()=>head+=`<th>金额<small>Tiền</small></th><th>工时<small>Giờ</small></th><th class="lab">单价<small>ĐG</small></th>`);head+=`</tr>`;
   const rows=[];
   state.centers.forEach(c=>{
     ['lab','oh'].forEach(kind=>{
@@ -368,8 +322,8 @@ function renderRepRate(){
         tAmt+=amt;tHrs+=hrs;const u=hrs>0?amt/hrs:0;
         cells+=`<td>${fmt(amt)}</td><td>${fmt(hrs,3)}</td><td class="${kind==='lab'?'calcl':'calc'}">${fmt(u)}</td>`;});
       const tu=tHrs>0?tAmt/tHrs:0;
-      const totcells=`<td class="gold"><b>${fmt(tAmt)}</b></td><td class="gold"><b>${fmt(tHrs,3)}</b></td><td class="gold">${fmt(tu)}</td>`;
-      rows.push(`<tr><td class="l"><b>${esc(c.id)}</b> ${esc(c.name)}</td><td class="l">${label}</td>${totcells}${cells}</tr>`);
+      const totcells=`<td class="gold" style="${sk(rL2,rW2,3,'#fff7db')}"><b>${fmt(tAmt)}</b></td><td class="gold" style="${sk(rL3,rW3,3,'#fff7db')}"><b>${fmt(tHrs,3)}</b></td><td class="gold" style="${sk(rL4,rW4,3,'#fff7db')}">${fmt(tu)}</td>`;
+      rows.push(`<tr><td class="l" style="${sk(0,rW0,3,'#fff')}"><b>${esc(c.id)}</b> ${esc(c.name)}</td><td class="l" style="${sk(rL1,rW1,3,'#fff')}">${label}</td>${totcells}${cells}</tr>`);
     });
   });
   document.getElementById('rrBox').innerHTML=`<table><thead>${head}</thead><tbody>${rows.join('')}</tbody></table>`;
@@ -395,33 +349,67 @@ function renderRepMgf(){
   const ys=document.getElementById('mgfYear');if(ys&&ys.options.length!==MGFYEARS.length){ys.innerHTML=MGFYEARS.map(y=>`<option ${y==='2026'?'selected':''}>${y}</option>`).join('');if(!ys.value)ys.value=mgfYear;}
   if(ys)mgfYear=ys.value||mgfYear;
   const g=(state.mgfAll&&state.mgfAll[mgfYear])||MGFDATA['2026'],{out,T}=mgfCalc();
+  // [label,key,edit,cls, showRev%, showCogs%]
   const rowsDef=[
-    ['销货收入 / Doanh thu','rev',true,'gold'],['料 / NVL','matRaw',true,''],['其他销货成本 / CP bán hàng khác','other',true,''],
-    ['材料合计 / Cộng vật liệu',null,false,'calc'],['直接人工 / Nhân công TT','labor',true,''],
-    ['委外加工费 / Gia công ngoài','outso',true,''],['制造费用 / CP SX chung','oh',true,''],
-    ['销货成本 / Giá vốn',null,false,'total'],['营业毛利 / Lãi gộp',null,false,'gold']];
-  let head=`<tr><th class="l">项目<small>Khoản mục</small></th><th class="gold" style="color:#14201f">合计<small>Cộng năm</small></th><th>占销收%<small>% DT</small></th>`;MONS12.forEach(m=>head+=`<th>${m}</th>`);head+=`</tr>`;
-  const pmMap={'材料合计':['mat',out.mat,T.mat],'直接人工':['labor',g.labor,T.labor],'制造费用':['oh',g.oh,T.oh],'营业毛利':['gross',out.gross,T.gross]};
+    ['销货收入 / Doanh thu','rev',true,'gold',true,false],['料 / NVL','matRaw',true,'',false,false],['其他销货成本 / CP bán hàng khác','other',true,'',false,false],
+    ['材料合计 / Cộng vật liệu',null,false,'calc',true,true],['直接人工 / Nhân công TT','labor',true,'',true,true],
+    ['委外加工费 / Gia công ngoài','outso',true,'',true,true],['制造费用 / CP SX chung','oh',true,'',true,true],
+    ['销货成本 / Giá vốn',null,false,'total',true,true],['营业毛利 / Lãi gộp',null,false,'gold',true,false]];
+  const valOf=(key,lab,k)=> key==='rev'?N(g.rev[k]):(key?N(g[key][k]):(lab.startsWith('材料')?out.mat[k]:lab.startsWith('销货成本')?out.cogs[k]:out.gross[k]));
+  const totOf=(key,lab)=> key?T[key]:(lab.startsWith('材料')?T.mat:lab.startsWith('销货成本')?T.cogs:T.gross);
+  const mW0=200,mW1=118,mW2=64,mW3=64,mL1=mW0,mL2=mL1+mW1,mL3=mL2+mW2;
+  let h1=`<tr><th class="l" rowspan="2" style="${sk(0,mW0,6)}background:var(--head)">项目<small>Khoản mục</small></th><th class="gold" style="${sk(mL1,mW1+mW2+mW3,6)}color:#14201f" colspan="3">全年合计<small>Cộng năm</small></th>`;MONS12.forEach(m=>h1+=`<th colspan="3">${m}</th>`);h1+=`</tr>`;
+  const sub=`<th>VND</th><th>占销收<small>%DT</small></th><th>占销成<small>%GV</small></th>`;
+  let h2=`<tr><th class="gold" style="${sk(mL1,mW1,6)}color:#14201f">VND</th><th style="${sk(mL2,mW2,6)}background:var(--head)">占销收<small>%DT</small></th><th style="${sk(mL3,mW3,6)}background:var(--head)">占销成<small>%GV</small></th>`;MONS12.forEach(()=>h2+=sub);h2+=`</tr>`;
   let body='';
-  rowsDef.forEach(([lab,key,edit,cls])=>{
-    let tds='';
+  rowsDef.forEach(([lab,key,edit,cls,sr,sc])=>{
+    const idk=key||cls;const tot=totOf(key,lab);
+    const totBg=cls==='total'?'background:var(--brand-d);color:#fff;font-weight:700;':'';
+    let cells=`<td class="gold" id="mgf-tot-${idk}" style="${sk(mL1,mW1,3)}${totBg}">${fmt(tot)}</td>`
+      +`<td class="calcr" id="mgf-rpt-${idk}" style="${sk(mL2,mW2,3,'#eef4f3')}${totBg}">${sr?pct(T.rev>0?tot/T.rev:0):''}</td>`
+      +`<td class="calcr" id="mgf-cpt-${idk}" style="${sk(mL3,mW3,3,'#eef4f3')}${totBg}">${sc?pct(T.cogs>0?tot/T.cogs:0):''}</td>`;
     for(let k=0;k<12;k++){
-      if(edit){tds+=`<td><input class="cell money" data-mgf="${key}" data-k="${k}" value="${fmt(N(g[key][k]))}"></td>`;}
-      else{const v=key==='rev'?N(g.rev[k]):(lab.startsWith('材料')?out.mat[k]:lab.startsWith('销货成本')?out.cogs[k]:out.gross[k]);
-        tds+=`<td class="${cls==='total'?'':cls}" id="mgf-${cls}-${k}" ${cls==='total'?'style="background:var(--brand-d);color:#fff;font-weight:700"':''}>${fmt(v)}</td>`;}
+      if(edit){cells+=`<td><input class="cell money" data-mgf="${key}" data-k="${k}" value="${fmt(N(g[key][k]))}"></td>`;}
+      else{cells+=`<td class="${cls==='total'?'':cls}" id="mgf-${cls}-${k}" ${cls==='total'?'style="background:var(--brand-d);color:#fff;font-weight:700"':''}>${fmt(valOf(key,lab,k))}</td>`;}
+      const rv=N(g.rev[k]),cg=out.cogs[k],v=valOf(key,lab,k);
+      cells+=`<td class="calcr" id="mgf-rp-${idk}-${k}" style="font-size:11px">${sr?(rv>0?pct(v/rv):'-'):''}</td>`
+            +`<td class="calcr" id="mgf-cp-${idk}-${k}" style="font-size:11px">${sc?(cg>0?pct(v/cg):'-'):''}</td>`;
     }
-    let tot,ptxt='';
-    if(edit)tot=T[key];else tot=(lab.startsWith('材料')?T.mat:lab.startsWith('销货成本')?T.cogs:T.gross);
-    if(['材料合计','直接人工','制造费用','销货成本'].some(p=>lab.startsWith(p)))ptxt=pct(T.rev>0?tot/T.rev:0);
-    const totStyle=cls==='total'?'style="background:var(--brand-d);color:#fff"':'';
-    body+=`<tr><td class="l"><b>${lab}</b></td><td class="gold" id="mgf-tot-${key||cls}" ${totStyle}>${fmt(tot)}</td><td class="calcr" id="mgf-pct-${key||cls}">${ptxt}</td>${tds}</tr>`;
-    // per-month % row for key ratio lines
-    const pmk=Object.keys(pmMap).find(p=>lab.startsWith(p));
-    if(pmk){const [pid,arr,ptot]=pmMap[pmk];let ptds='';
-      for(let k=0;k<12;k++){const rv=N(g.rev[k]);ptds+=`<td class="calcr" id="mgf-pm-${pid}-${k}">${rv>0?pct(N(arr[k])/rv):'-'}</td>`;}
-      body+=`<tr style="font-size:11px"><td class="l" style="color:#5c6b69;padding-left:16px">↳ % 占销收 / % DT</td><td class="calcr"></td><td class="calcr" id="mgf-pmt-${pid}">${T.rev>0?pct(ptot/T.rev):'-'}</td>${ptds}</tr>`;}
+    body+=`<tr><td class="l" style="${sk(0,mW0,3,'#fff')}${cls==='total'?'background:var(--brand-d);color:#fff;font-weight:700;':''}"><b>${lab}</b></td>${cells}</tr>`;
   });
-  document.getElementById('rmBox').innerHTML=`<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  document.getElementById('rmBox').innerHTML=`<table><thead>${h1}${h2}</thead><tbody>${body}</tbody></table>`;
+  renderMgfChart();
+}
+function stackedColSVG(labels,series){
+  const W=880,H=230,padL=10,padR=10,padT=10,padB=26,plotH=H-padT-padB,plotW=W-padL-padR,n=labels.length;
+  const totals=labels.map((_,k)=>series.reduce((s,se)=>s+Math.max(0,N(se.values[k])),0));const max=Math.max(...totals,1);
+  const step=plotW/n,bw=Math.min(46,step*0.6);let g='';
+  labels.forEach((lab,k)=>{const cx=padL+step*(k+0.5);let yb=padT+plotH;
+    series.forEach(se=>{const v=Math.max(0,N(se.values[k])),hh=plotH*v/max;yb-=hh;if(hh>0.3)g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yb.toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" fill="${se.color}"/>`;});
+    g+=`<text x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#5c6b69">${lab}</text>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">${g}</svg>`;
+}
+function lineChartSVG(labels,lines){
+  const W=880,H=210,padL=42,padR=10,padT=10,padB=26,plotH=H-padT-padB,plotW=W-padL-padR,n=labels.length;
+  let max=0;lines.forEach(l=>l.values.forEach(v=>{if(v>max)max=v;}));max=Math.max(max,0.1);
+  const X=k=>padL+plotW*(n<=1?0:k/(n-1)),Y=v=>padT+plotH*(1-v/max);let g='';
+  for(let i=0;i<=4;i++){const yy=padT+plotH*i/4,val=max*(1-i/4);g+=`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="#e6edeb"/><text x="${padL-4}" y="${(yy+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#9aa8a5">${(val*100).toFixed(0)}%</text>`;}
+  labels.forEach((lab,k)=>g+=`<text x="${X(k).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#5c6b69">${lab}</text>`);
+  lines.forEach(l=>{const pts=l.values.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+    g+=`<polyline points="${pts}" fill="none" stroke="${l.color}" stroke-width="2"/>`;
+    l.values.forEach((v,k)=>g+=`<circle cx="${X(k).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.5" fill="${l.color}"/>`);});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">${g}</svg>`;
+}
+function renderMgfChart(){
+  const el=document.getElementById('mgfChart');if(!el)return;
+  const g=(state.mgfAll&&state.mgfAll[mgfYear])||MGFDATA['2026'],{out}=mgfCalc();
+  const labels=MONS12.map(m=>m.split('/')[1]);
+  const series=[{label:'材料 / Vật liệu',color:'#0f6d63',values:out.mat},{label:'人工 / Nhân công',color:'#6b4d9c',values:g.labor.map(N)},{label:'委外 / GC ngoài',color:'#a8600a',values:g.outso.map(N)},{label:'制费 / CP chung',color:'#2f6f9f',values:g.oh.map(N)}];
+  const rr=k=>N(g.rev[k]);
+  const lines=[{label:'材料%',color:'#0f6d63',values:out.mat.map((v,k)=>rr(k)>0?v/rr(k):0)},{label:'人工%',color:'#6b4d9c',values:g.labor.map((v,k)=>rr(k)>0?N(v)/rr(k):0)},{label:'制费%',color:'#2f6f9f',values:g.oh.map((v,k)=>rr(k)>0?N(v)/rr(k):0)},{label:'毛利率%',color:'#a8600a',values:out.gross.map((v,k)=>rr(k)>0?v/rr(k):0)}];
+  const leg=arr=>`<div style="display:flex;gap:14px;flex-wrap:wrap;margin:4px 0 12px">${arr.map(s=>`<span style="font-size:12px"><span style="display:inline-block;width:12px;height:12px;background:${s.color};border-radius:3px;vertical-align:middle"></span> ${s.label}</span>`).join('')}</div>`;
+  el.innerHTML=`<h4 style="margin:6px 0;color:#0a4f48">Cơ cấu chi phí theo tháng / 每月成本结构 (VND)</h4>${stackedColSVG(labels,series)}${leg(series)}
+    <h4 style="margin:10px 0 6px;color:#0a4f48">Tỷ lệ % theo tháng / 每月比率 (% doanh thu)</h4>${lineChartSVG(labels,lines)}${leg(lines)}`;
 }
 function renderRepInv(){
   const g=state.inv;
@@ -458,33 +446,85 @@ function renderRepRecon(){
 
 const MONS12=['1月/T1','2月/T2','3月/T3','4月/T4','5月/T5','6月/T6','7月/T7','8月/T8','9月/T9','10月/T10','11月/T11','12月/T12'];
 function fillYear(sel,def){if(sel&&sel.options.length!==OHDATA.years.length){sel.innerHTML=OHDATA.years.map(y=>`<option ${y===def?'selected':''}>${y}</option>`).join('');if(!sel.value)sel.value=def;}return (sel&&sel.value)||def;}
+function sk(left,w,z,bg){return `position:sticky;left:${left}px;min-width:${w}px;max-width:${w}px;width:${w}px;z-index:${z};`+(bg?`background:${bg};`:'');}
 function renderRepOH(){
   const yr=fillYear(document.getElementById('ohYear'),'2026');
   const sel=document.getElementById('ohSheet');
   if(sel.options.length!==OHDATA.sheets.length)sel.innerHTML=OHDATA.sheets.map(s=>`<option value="${s.id}">${s.cn} / ${s.vn}</option>`).join('');
   const sid=sel.value||OHDATA.sheets[0].id;
   const rows=(OHDATA.data[yr]||{})[sid]||[];
-  let head=`<tr><th class="l">会计科目<small>Tài khoản</small></th><th class="gold" style="color:#14201f">全年合计<small>Cộng cả năm</small></th>`;MONS12.forEach(m=>head+=`<th>${m}</th>`);head+=`</tr>`;
-  const colTot=new Array(12).fill(0);let gTot=0;let body='';
-  OHDATA.accounts.forEach((a,i)=>{const vals=rows[i]||new Array(12).fill(0);let rt=0;let tds='';
-    for(let k=0;k<12;k++){const v=N(vals[k]);colTot[k]+=v;rt+=v;tds+=`<td>${fmt(v)}</td>`;}
-    gTot+=rt;
-    body+=`<tr><td class="l"><b>${a.cn}</b><small>${a.vn}</small></td><td class="calc">${fmt(rt)}</td>${tds}</tr>`;});
+  const rowT=OHDATA.accounts.map((a,i)=>{const v=rows[i]||[];let s=0;for(let k=0;k<12;k++)s+=N(v[k]);return s;});
+  const gTot=rowT.reduce((a,b)=>a+b,0);
+  // frozen column geometry: 会计科目 | F/V | 全年合计 | 占比%
+  const L0=0,W0=220,L1=W0,W1=54,L2=L0+W0+W1,W2=130,L3=L2+W2,W3=84;
+  const hz=6,bz=3;
+  let head=`<tr>`
+    +`<th class="l" style="${sk(L0,W0,hz)}background:var(--head)">会计科目<small>Tài khoản</small></th>`
+    +`<th style="${sk(L1,W1,hz)}background:var(--head)">F/V</th>`
+    +`<th class="gold" style="${sk(L2,W2,hz)}color:#14201f">全年合计<small>Cộng cả năm</small></th>`
+    +`<th style="${sk(L3,W3,hz)}background:var(--head)">占比<small>% Tỷ trọng</small></th>`;
+  MONS12.forEach(m=>head+=`<th>${m}</th>`);head+=`</tr>`;
+  const colTot=new Array(12).fill(0),fTot=new Array(12).fill(0),vTot=new Array(12).fill(0);
+  let fYear=0,vYear=0;let body='';
+  OHDATA.accounts.forEach((a,i)=>{const vals=rows[i]||new Array(12).fill(0);let tds='';
+    const fv=(state.fv&&state.fv[a.cn])||'V';
+    for(let k=0;k<12;k++){const v=N(vals[k]);colTot[k]+=v;if(fv==='F')fTot[k]+=v;else vTot[k]+=v;tds+=`<td>${fmt(v)}</td>`;}
+    const rt=rowT[i];if(fv==='F')fYear+=rt;else vYear+=rt;
+    const opt=x=>`<option ${fv===x?'selected':''}>${x}</option>`;
+    body+=`<tr>`
+      +`<td class="l" style="${sk(L0,W0,bz,'#fff')}"><b>${a.cn}</b><small>${a.vn}</small></td>`
+      +`<td style="${sk(L1,W1,bz,fv==='F'?'#e2f0ee':'#fbeed8')}"><select class="cell c" data-fv="${esc(a.cn)}" style="width:44px">${opt('F')}${opt('V')}</select></td>`
+      +`<td class="calc" style="${sk(L2,W2,bz)}">${fmt(rt)}</td>`
+      +`<td class="calcr" style="${sk(L3,W3,bz,'#eef4f3')}">${gTot!==0?pct(rt/gTot):'-'}</td>${tds}</tr>`;});
+  const mrow=(lab,arr,yr2,bg)=>{let t='';arr.forEach(v=>t+=`<td>${fmt(v)}</td>`);
+    return `<tr><td class="l" style="${sk(L0,W0,bz,bg)}"><b>${lab}</b></td><td style="${sk(L1,W1,bz,bg)}"></td>`
+      +`<td style="${sk(L2,W2,bz,bg)};font-weight:700">${fmt(yr2)}</td><td class="calcr" style="${sk(L3,W3,bz,bg)}">${gTot!==0?pct(yr2/gTot):'-'}</td>${t}</tr>`;};
   let ttds='';colTot.forEach(v=>ttds+=`<td>${fmt(v)}</td>`);
-  const totrow=`<tr class="total"><td class="l">制造费用合计 / Tổng CP SX chung</td><td>${fmt(gTot)}</td>${ttds}</tr>`;
-  document.getElementById('ohBox').innerHTML=`<table><thead>${head}</thead><tbody>${totrow}${body}</tbody></table>`;
+  const totrow=`<tr class="total"><td class="l" style="${sk(L0,W0,bz,'#0a4f48')}">制造费用合计 / Tổng CP SX</td><td style="${sk(L1,W1,bz,'#0a4f48')}"></td><td style="${sk(L2,W2,bz,'#0a4f48')}">${fmt(gTot)}</td><td style="${sk(L3,W3,bz,'#0a4f48')}">100,0%</td>${ttds}</tr>`;
+  const fRow=mrow('固定成本 F / CP cố định',fTot,fYear,'#dcece9');
+  const vRow=mrow('变动成本 V / CP biến đổi',vTot,vYear,'#fbeed8');
+  document.getElementById('ohBox').innerHTML=`<table><thead>${head}</thead><tbody>${totrow}${fRow}${vRow}${body}</tbody></table>`;
+  renderOHChart(yr,sid,rowT,gTot,{fYear,vYear});
+}
+function renderOHChart(yr,sid,rowT,gTot,fv){
+  const el=document.getElementById('ohChart');if(!el)return;
+  let items=OHDATA.accounts.map((a,i)=>({cn:a.cn,vn:a.vn,value:rowT[i]})).filter(x=>x.value>0).sort((a,b)=>b.value-a.value);
+  const tot=items.reduce((s,x)=>s+x.value,0);
+  const palette=['#0f6d63','#2f6f9f','#6b4d9c','#a8600a','#0a4f48','#3a7d44','#9c4d6b','#4d6b9c'];
+  const top=items.slice(0,8),rest=items.slice(8);const restSum=rest.reduce((s,x)=>s+x.value,0);
+  const segs=top.map((x,idx)=>({label:x.cn+' / '+x.vn,value:x.value,color:palette[idx%palette.length]}));
+  if(restSum>0)segs.push({label:'其他 / Khác ('+rest.length+')',value:restSum,color:'#c3ccca'});
+  const legend=`<table style="border:none;width:auto"><tbody>`+segs.map(s=>`<tr>
+    <td style="border:none;padding:2px 8px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${s.color}"></span></td>
+    <td style="border:none;padding:2px 8px;text-align:left">${s.label}</td>
+    <td style="border:none;padding:2px 8px;font-weight:700">${fmt(s.value)}</td>
+    <td style="border:none;padding:2px 8px;color:#5c6b69">${tot>0?pct(s.value/tot):''}</td></tr>`).join('')+`</tbody></table>`;
+  el.innerHTML=`<h4 style="margin:6px 0;color:#0a4f48">Cơ cấu chi phí SX chung / 制造费用构成 (${yr}) — Tổng ${fmt(gTot)} VND</h4>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">${donutSVG(segs,tot,'制造费用/CP SX')}<div>${legend}</div></div>`;
+  if(fv){const fvsegs=[{label:'固定 F / Cố định',value:fv.fYear,color:'#0f6d63'},{label:'变动 V / Biến đổi',value:fv.vYear,color:'#a8600a'}];const ft=fv.fYear+fv.vYear;
+    el.innerHTML+=`<h4 style="margin:14px 0 6px;color:#0a4f48">Cố định (F) vs Biến đổi (V) / 固定 vs 变动 (${yr})</h4>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">${donutSVG(fvsegs,ft,'合计/Tổng')}
+      <div><table style="border:none"><tbody>
+      <tr><td style="border:none;padding:3px 10px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#0f6d63"></span></td><td style="border:none;text-align:left;padding:3px 10px">固定成本 F / CP cố định</td><td style="border:none;font-weight:700;padding:3px 10px">${fmt(fv.fYear)}</td><td style="border:none;color:#5c6b69;padding:3px 10px">${ft>0?pct(fv.fYear/ft):''}</td></tr>
+      <tr><td style="border:none;padding:3px 10px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#a8600a"></span></td><td style="border:none;text-align:left;padding:3px 10px">变动成本 V / CP biến đổi</td><td style="border:none;font-weight:700;padding:3px 10px">${fmt(fv.vYear)}</td><td style="border:none;color:#5c6b69;padding:3px 10px">${ft>0?pct(fv.vYear/ft):''}</td></tr>
+      </tbody></table></div></div>`;}
 }
 
 /* ===== SVG chart helpers ===== */
-function donutSVG(segs,total){
-  const cx=110,cy=110,r=96,ri=60;let a=-Math.PI/2;let p='';
+function donutSVG(segs,total,centerLabel){
+  const cx=140,cy=140,r=126,ri=78;let a=-Math.PI/2;let p='';let lbl='';
   segs.forEach(s=>{const frac=total>0?Math.max(0,s.value)/total:0;const a2=a+frac*2*Math.PI;
     if(frac>0){const x1=cx+r*Math.cos(a),y1=cy+r*Math.sin(a),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2);
       const xi2=cx+ri*Math.cos(a2),yi2=cy+ri*Math.sin(a2),xi1=cx+ri*Math.cos(a),yi1=cy+ri*Math.sin(a);
       const lg=frac>0.5?1:0;
-      p+=`<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${xi2.toFixed(2)} ${yi2.toFixed(2)} A${ri} ${ri} 0 ${lg} 0 ${xi1.toFixed(2)} ${yi1.toFixed(2)} Z" fill="${s.color}"/>`;}
+      p+=`<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${xi2.toFixed(2)} ${yi2.toFixed(2)} A${ri} ${ri} 0 ${lg} 0 ${xi1.toFixed(2)} ${yi1.toFixed(2)} Z" fill="${s.color}"/>`;
+      if(frac>=0.04){const mid=(a+a2)/2,lr=(r+ri)/2,lx=cx+lr*Math.cos(mid),ly=cy+lr*Math.sin(mid);
+        const short=(s.short||String(s.label||'').split(' / ')[0].split(' (')[0].replace(/^製-/,''));
+        lbl+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" style="paint-order:stroke" stroke="rgba(0,0,0,.25)" stroke-width="0.5">${pct(frac)}</text>`;
+        if(frac>=0.085)lbl+=`<text x="${lx.toFixed(1)}" y="${(ly+12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f0f6f5">${short}</text>`;}
+    }
     a=a2;});
-  return `<svg viewBox="0 0 220 220" width="200" height="200">${p}<circle cx="110" cy="110" r="60" fill="#fff"/><text x="110" y="102" text-anchor="middle" font-size="11" fill="#5c6b69">销货成本/Giá vốn</text><text x="110" y="122" text-anchor="middle" font-size="12" font-weight="700" fill="#0a4f48">${fmt(total)}</text></svg>`;
+  return `<svg viewBox="0 0 280 280" width="240" height="240">${p}<circle cx="140" cy="140" r="78" fill="#fff"/><text x="140" y="132" text-anchor="middle" font-size="11" fill="#5c6b69">${centerLabel||'合计 / Tổng'}</text><text x="140" y="150" text-anchor="middle" font-size="12" font-weight="700" fill="#0a4f48">${fmt(total)}</text>${lbl}</svg>`;
 }
 function hbarsSVG(items){
   const max=Math.max(...items.map(i=>Math.abs(i.value)),1);const bw=300,rowh=34;let y=6,g='';
@@ -521,7 +561,7 @@ function renderRepCS(){
   document.getElementById('csBox').innerHTML=`
     <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
       <div><h4 style="margin:4px 0 8px;color:#0a4f48">Cơ cấu giá vốn 6 tháng 2026 / 销货成本结构</h4>
-        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">${donutSVG(segs,T.cogs)}<div>${legendHTML(segs,T.cogs)}</div></div>
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">${donutSVG(segs,T.cogs,'销货成本/Giá vốn')}<div>${legendHTML(segs,T.cogs)}</div></div>
         <p style="color:#5c6b69;font-size:12px;margin:6px 0 0">Lãi gộp / 营业毛利: <b>${fmt(T.gross)}</b> (${pct(T.rev>0?T.gross/T.rev:0)} doanh thu)</p></div>
       <div style="flex:1;min-width:420px"><h4 style="margin:4px 0 8px;color:#0a4f48">Top 10 khoản CP SX chung ${yr} / 制造费用前十大</h4>
         ${hbarsSVG(items)}</div>
@@ -589,6 +629,176 @@ function renderNXT(){
   document.getElementById('nxBox').innerHTML=`<p style="color:#5c6b69;font-size:12.5px;margin:0 0 10px">Bảng nhập–xuất–tồn theo nhóm 原料/半成品/成品 của từng tháng (nguồn: axcr430). Tồn cuối tháng này = tồn đầu tháng sau. Dùng làm cơ sở tính giá thành tháng mới. Có thể bổ sung các tháng tiếp theo.</p><table><thead>${head}</thead><tbody>${totrow}${body}</tbody></table>`;
 }
 
+
+/* ===== report: 对比分析 So sánh năm/kỳ ===== */
+function abbrN(v){const a=Math.abs(v);if(a>=1e9)return (v/1e9).toFixed(1)+' tỷ';if(a>=1e6)return (v/1e6).toFixed(0)+' tr';return fmt(v);}
+function pctSign(n){const up=n>=0;return `<span style="color:${up?'#0f6d63':'#a12b21'}">${up?'▲':'▼'} ${pct(Math.abs(n))}</span>`;}
+const CMETRICS=[['rev','销货收入 / Doanh thu'],['mat','材料合计 / Vật liệu'],['labor','直接人工 / Nhân công'],['oh','制造费用 / CP SX (giá vốn)'],['cogs','销货成本 / Giá vốn'],['gross','营业毛利 / Lãi gộp'],['ohd','制造费用明细 / Tổng CP SX (chi tiết)']];
+function seriesOf(metric,year){
+  if(metric==='ohd'){const rows=(OHDATA.data[year]||{})['制造費用明細表']||[];const arr=new Array(12).fill(0);rows.forEach(r=>r.forEach((v,k)=>arr[k]+=N(v)));return arr;}
+  const g=(MGFDATA&&MGFDATA[year]);if(!g)return new Array(12).fill(0);
+  const rev=g.rev.map(N),matRaw=g.matRaw.map(N),other=g.other.map(N),labor=g.labor.map(N),outso=g.outso.map(N),oh=g.oh.map(N);
+  const mat=rev.map((_,k)=>matRaw[k]+other[k]);const cogs=mat.map((v,k)=>v+labor[k]+outso[k]+oh[k]);const gross=rev.map((v,k)=>v-cogs[k]);
+  return ({rev,mat,labor,oh,cogs,gross,outso})[metric]||rev;
+}
+function multiLineSVG(labels,lines){
+  const W=880,H=270,padL=54,padR=10,padT=12,padB=26,plotH=H-padT-padB,plotW=W-padL-padR,n=labels.length;
+  let max=0,min=0;lines.forEach(l=>l.values.forEach(v=>{if(v>max)max=v;if(v<min)min=v;}));if(max<=min)max=min+1;const rng=max-min;
+  const X=k=>padL+plotW*(n<=1?0:k/(n-1)),Y=v=>padT+plotH*(1-(v-min)/rng);let g='';
+  for(let i=0;i<=4;i++){const yy=padT+plotH*i/4,val=max-rng*i/4;g+=`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="#e6edeb"/><text x="${padL-4}" y="${(yy+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#9aa8a5">${abbrN(val)}</text>`;}
+  labels.forEach((lab,k)=>g+=`<text x="${X(k).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#5c6b69">${lab}</text>`);
+  lines.forEach(l=>{const pts=l.values.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');g+=`<polyline points="${pts}" fill="none" stroke="${l.color}" stroke-width="2.2"/>`;l.values.forEach((v,k)=>g+=`<circle cx="${X(k).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.4" fill="${l.color}"/>`);});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">${g}</svg>`;
+}
+function barYearSVG(labels,values){
+  const W=880,H=220,padL=54,padR=10,padT=16,padB=26,plotH=H-padT-padB,plotW=W-padL-padR,n=labels.length;
+  const colors=['#c3ccca','#6b4d9c','#2f6f9f','#0f6d63'];const max=Math.max(...values.map(v=>Math.abs(v)),1);const step=plotW/n,bw=Math.min(90,step*0.5);let g='';
+  for(let i=0;i<=4;i++){const yy=padT+plotH*i/4,val=max*(1-i/4);g+=`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="#e6edeb"/><text x="${padL-4}" y="${(yy+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#9aa8a5">${abbrN(val)}</text>`;}
+  labels.forEach((lab,k)=>{const cx=padL+step*(k+0.5),hh=plotH*Math.max(0,values[k])/max,y=padT+plotH-hh;
+    g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" rx="3" fill="${colors[k%colors.length]}"/>`;
+    let growth='';if(k>0&&values[k-1]!==0){const gr=(values[k]-values[k-1])/Math.abs(values[k-1]);growth=` <tspan fill="${gr>=0?'#0f6d63':'#a12b21'}">(${gr>=0?'+':''}${(gr*100).toFixed(0)}%)</tspan>`;}
+    g+=`<text x="${cx.toFixed(1)}" y="${(y-4).toFixed(1)}" text-anchor="middle" font-size="10" fill="#0a4f48" font-weight="700">${abbrN(values[k])}${growth}</text>`;
+    g+=`<text x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="12" fill="#14201f">${lab}</text>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">${g}</svg>`;
+}
+function abbrShort(v){const a=Math.abs(v);if(a>=1e9)return (v/1e9).toFixed(1)+'t';if(a>=1e6)return (v/1e6).toFixed(0)+'tr';return String(Math.round(v));}
+function groupBarSVG(labels,a,b,na,nb){
+  const W=920,H=300,padL=58,padR=12,padT=26,padB=42,plotH=H-padT-padB,plotW=W-padL-padR,n=labels.length;
+  const max=Math.max(...a.map(v=>Math.abs(v)),...b.map(v=>Math.abs(v)),1),step=plotW/n,bw=Math.min(22,step*0.34),gap=3;let g='';
+  for(let i=0;i<=4;i++){const yy=padT+plotH*i/4,val=max*(1-i/4);g+=`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="#e6edeb"/><text x="${padL-5}" y="${(yy+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#9aa8a5">${abbrN(val)}</text>`;}
+  labels.forEach((lab,k)=>{const cx=padL+step*(k+0.5),hb=plotH*Math.max(0,b[k])/max,ha=plotH*Math.max(0,a[k])/max,xb=cx-bw-gap/2,xa=cx+gap/2,yb=padT+plotH-hb,ya=padT+plotH-ha;
+    g+=`<rect x="${xb.toFixed(1)}" y="${yb.toFixed(1)}" width="${bw}" height="${hb.toFixed(1)}" rx="2" fill="#b9c4c2"/>`;
+    g+=`<rect x="${xa.toFixed(1)}" y="${ya.toFixed(1)}" width="${bw}" height="${ha.toFixed(1)}" rx="2" fill="#0f6d63"/>`;
+    g+=`<text x="${(xb+bw/2).toFixed(1)}" y="${(yb-3).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="#5c6b69">${abbrShort(b[k])}</text>`;
+    g+=`<text x="${(xa+bw/2).toFixed(1)}" y="${(ya-3).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="#0a4f48" font-weight="700">${abbrShort(a[k])}</text>`;
+    let yoy='';if(b[k]!==0){const gr=(a[k]-b[k])/Math.abs(b[k]);yoy=`<tspan fill="${gr>=0?'#0f6d63':'#a12b21'}">${gr>=0?'+':''}${(gr*100).toFixed(0)}%</tspan>`;}
+    g+=`<text x="${cx.toFixed(1)}" y="${(H-22).toFixed(1)}" text-anchor="middle" font-size="9">${yoy}</text>`;
+    g+=`<text x="${cx.toFixed(1)}" y="${(H-8).toFixed(1)}" text-anchor="middle" font-size="10" fill="#14201f">${lab}</text>`;});
+  g+=`<rect x="${padL}" y="6" width="12" height="10" fill="#0f6d63"/><text x="${padL+16}" y="15" font-size="11" fill="#14201f">${na}</text>`;
+  g+=`<rect x="${padL+78}" y="6" width="12" height="10" fill="#b9c4c2"/><text x="${padL+94}" y="15" font-size="11" fill="#14201f">${nb}</text>`;
+  g+=`<text x="${W-padR}" y="15" text-anchor="end" font-size="9" fill="#9aa8a5">t = tỷ · tr = triệu · %=同比YoY</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">${g}</svg>`;
+}
+function renderCompare(){
+  const ms=document.getElementById('cmpMetric');if(ms.options.length!==CMETRICS.length)ms.innerHTML=CMETRICS.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join('');
+  const yy=document.getElementById('cmpYear');const years=MGFYEARS;if(yy.options.length!==years.length){yy.innerHTML=years.map(y=>`<option ${y==='2026'?'selected':''}>${y}</option>`).join('');if(!yy.value)yy.value='2026';}
+  const mm=document.getElementById('cmpMonth');if(mm.options.length!==12)mm.innerHTML=MONS12.map((m,i)=>`<option value="${i}" ${i===5?'selected':''}>${m}</option>`).join('');
+  const metric=ms.value||'rev',year=yy.value||'2026',mi=+(mm.value||5);
+  const label=(CMETRICS.find(m=>m[0]===metric)||['',''])[1];
+  const yi=years.indexOf(year),prevY=years[yi-1];
+  const d=(a,b)=>(b==null||b===0)?'-':pctSign((a-b)/Math.abs(b));
+  // ① monthly
+  let rowsH='';
+  CMETRICS.forEach(([mk,ml])=>{const cur=seriesOf(mk,year)[mi];const yoy=prevY?seriesOf(mk,prevY)[mi]:null;
+    let mom;if(mi>0)mom=seriesOf(mk,year)[mi-1];else mom=prevY?seriesOf(mk,prevY)[11]:null;
+    rowsH+=`<tr><td class="l"><b>${ml}</b></td><td class="calc">${fmt(cur)}</td><td>${yoy==null?'-':fmt(yoy)}</td><td class="calcr">${d(cur,yoy)}</td><td>${mom==null?'-':fmt(mom)}</td><td class="calcr">${d(cur,mom)}</td></tr>`;});
+  document.getElementById('cmpTbl').innerHTML=`<table><thead><tr><th class="l">项目<small>Chỉ tiêu</small></th>
+    <th>本期<small>${year}-${String(mi+1).padStart(2,'0')}</small></th><th>去年同期<small>${prevY||'-'}-${String(mi+1).padStart(2,'0')}</small></th><th>YoY ±<small>同比</small></th>
+    <th>上期<small>${mi>0?year+'-'+String(mi).padStart(2,'0'):(prevY||'-')+'-12'}</small></th><th>MoM ±<small>环比</small></th></tr></thead><tbody>${rowsH}</tbody></table>`;
+  // ② cumulative YTD
+  let cumH='';
+  CMETRICS.forEach(([mk,ml])=>{const c=seriesOf(mk,year).slice(0,mi+1).reduce((a,b)=>a+b,0);
+    const pv=prevY?seriesOf(mk,prevY).slice(0,mi+1).reduce((a,b)=>a+b,0):null;
+    cumH+=`<tr><td class="l"><b>${ml}</b></td><td class="calc">${fmt(c)}</td><td>${pv==null?'-':fmt(pv)}</td><td class="calcr">${d(c,pv)}</td></tr>`;});
+  document.getElementById('cmpCum').innerHTML=`<table><thead><tr><th class="l">项目<small>Chỉ tiêu</small></th>
+    <th>本年累计<small>${year} T1–T${mi+1}</small></th><th>去年同期累计<small>${prevY||'-'} T1–T${mi+1}</small></th><th>YoY ±<small>同比累计</small></th></tr></thead><tbody>${cumH}</tbody></table>`;
+  // charts: current vs previous by month + year totals
+  const labels=MONS12.map(m=>m.split('/')[1]);
+  const curArr=seriesOf(metric,year),prevArr=prevY?seriesOf(metric,prevY):new Array(12).fill(0);
+  const totals=years.map(y=>seriesOf(metric,y).reduce((a,b)=>a+b,0));
+  document.getElementById('cmpChart').innerHTML=
+    `<h4 style="margin:14px 0 4px;color:#0a4f48">So sánh theo tháng — ${label}: <b>${year}</b> vs ${prevY||'—'} / 每月同比</h4>
+     ${groupBarSVG(labels,curArr,prevArr,year,prevY||'—')}
+     <h4 style="margin:14px 0 4px;color:#0a4f48">Tổng theo năm — ${label} / 各年合计 (kèm tăng trưởng)</h4>${barYearSVG(years,totals)}`;
+}
+
+
+/* ===== export helpers ===== */
+function exportRep(boxIds,fname){
+  try{const wb=XLSX.utils.book_new();let n=0;
+    (Array.isArray(boxIds)?boxIds:[boxIds]).forEach(id=>{const box=document.getElementById(id);if(!box)return;
+      box.querySelectorAll('table').forEach((t,i)=>{const ws=XLSX.utils.table_to_sheet(t,{raw:true});XLSX.utils.book_append_sheet(wb,ws,(id+'_'+(i+1)).slice(0,31));n++;});});
+    if(!n){setStatus('Không có bảng để xuất');return;}
+    XLSX.writeFile(wb,fname);setStatus('已导出 / Đã xuất '+fname);
+  }catch(e){setStatus('Lỗi xuất Excel');}
+}
+function exportCS(){
+  try{const {T}=mgfCalc();const wb=XLSX.utils.book_new();
+    const s1=[['成本结构/Cơ cấu giá vốn','VND','%'],
+      ['材料/Vật liệu',Math.round(T.mat),T.cogs?T.mat/T.cogs:0],['人工/Nhân công',Math.round(T.labor),T.cogs?T.labor/T.cogs:0],
+      ['委外/GC ngoài',Math.round(T.outso),T.cogs?T.outso/T.cogs:0],['制费/CP chung',Math.round(T.oh),T.cogs?T.oh/T.cogs:0],
+      ['销货成本/Giá vốn',Math.round(T.cogs),1]];
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s1),'CoCauGiaVon');
+    const yr=(document.getElementById('csYear')||{}).value||'2026';const sid=(document.getElementById('csDept')||{}).value||OHDATA.sheets[0].id;
+    const rows=(OHDATA.data[yr]||{})[sid]||[];
+    const items=OHDATA.accounts.map((a,i)=>[a.cn+' / '+a.vn,Math.round((rows[i]||[]).reduce((s,x)=>s+N(x),0))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Top10 制造费用/CP SX chung ('+yr+')','VND'],...items]),'Top10CP');
+    XLSX.writeFile(wb,'co-cau-chi-phi.xlsx');setStatus('已导出 / Đã xuất co-cau-chi-phi.xlsx');
+  }catch(e){setStatus('Lỗi xuất Excel');}
+}
+/* ===== inventory aging report ===== */
+const AGE_BUCKETS=['180天以內 / ≤180 ngày','181-360天','361-720天','721-999天','1000天以上 / >1000'];
+const AGE_COLORS=['#0f6d63','#3a7d44','#a8600a','#c0392b','#7d1f1f'];
+function renderAging(){
+  const sel=document.getElementById('agMonth');const months=Object.keys(AGINGDATA).sort();
+  if(sel.options.length!==months.length)sel.innerHTML=months.map(m=>`<option ${m===months[months.length-1]?'selected':''}>${m}</option>`).join('');
+  const mo=sel.value||months[months.length-1];const d=AGINGDATA[mo];const box=document.getElementById('agBox');
+  if(!d){box.innerHTML='<p class="hint">Chưa có dữ liệu tháng này. Bấm ⬆ Nhập file tháng.</p>';return;}
+  // bucket summary + donut
+  const segs=d.buckets.map((b,i)=>({label:AGE_BUCKETS[i],value:b.amt,color:AGE_COLORS[i]}));
+  let bt=`<table><thead><tr><th class="l">貨齡區間 / Khoảng tuổi</th><th>金额/Giá trị</th><th>占比%</th><th>数量/SL</th></tr></thead><tbody>`;
+  bt+=`<tr class="total"><td class="l">合计 / Tổng tồn kho</td><td>${fmt(d.totA)}</td><td>100,0%</td><td>${fmt(d.totQ,0)}</td></tr>`;
+  d.buckets.forEach((b,i)=>{bt+=`<tr><td class="l"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${AGE_COLORS[i]};margin-right:6px"></span>${AGE_BUCKETS[i]}</td><td>${fmt(b.amt)}</td><td class="calcr">${d.totA?pct(b.amt/d.totA):'-'}</td><td>${fmt(b.qty,0)}</td></tr>`;});
+  bt+=`</tbody></table>`;
+  const agedPct=d.totA?d.agedTotal/d.totA:0;
+  const warnBox=`<div style="background:${agedPct>0.1?'#fdecea':'#fff7e6'};border:1px solid ${agedPct>0.1?'#e0b4b4':'#e6d3a3'};border-radius:8px;padding:10px 14px;margin:12px 0">
+    <b>⚠ Cảnh báo tồn kho lâu / 长库龄预警</b> — Hàng <b>361+ ngày</b>: <b>${fmt(d.agedTotal)} VND</b> (${pct(agedPct)} tổng tồn), ${fmt(d.agedCount,0)} mã. Dự phòng giảm giá 存貨跌價: <b>${fmt(d.imp)} VND</b>.</div>`;
+  // warning table (top aged items)
+  let wt=`<h4 style="margin:12px 0 6px;color:#a12b21">Danh sách cảnh báo (Top ${d.warn.length} theo giá trị hàng 361+ ngày) / 长库龄大额明细</h4>
+    <div class="scroll"><table><thead><tr><th class="l">料號/Mã</th><th class="l">名稱/Tên</th><th>庫存金额/Tồn</th><th>SL/数量</th><th>≥361天金额/Giá trị lâu</th><th>库龄区间/Nhóm tuổi</th><th>存货跌价/Dự phòng</th></tr></thead><tbody>`;
+  d.warn.forEach(it=>{const col=AGE_COLORS[it.oldest]||'#a12b21';
+    wt+=`<tr><td class="l">${esc(it.code)}</td><td class="l" style="max-width:260px">${esc(it.name)}</td><td>${fmt(it.ta)}</td><td>${fmt(it.tq,0)}</td>
+      <td class="calc" style="font-weight:700">${fmt(it.agedAmt)}</td><td class="l"><span style="color:${col};font-weight:700">${AGE_BUCKETS[it.oldest]}</span></td><td class="calcr">${fmt(it.imp)}</td></tr>`;});
+  wt+=`</tbody></table></div>`;
+  box.innerHTML=`<p class="hint">越南怡業 · 庫存成本貨齡分析表 · Tháng ${mo}. Cập nhật hằng tháng bằng nút ⬆ Nhập file tháng (định dạng như Book1).</p>
+    ${warnBox}
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:1;min-width:360px">${bt}</div>
+      <div>${donutSVG(segs,d.totA,'库存/Tồn kho')}</div>
+    </div>${wt}`;
+}
+function importAging(ev){
+  const f=ev.target.files&&ev.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=e=>{try{
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];const A=XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
+    // find month from a cell containing 年度/月份
+    let ym='';for(let i=0;i<Math.min(8,A.length);i++){const line=(A[i]||[]).join(' ');const m=line.match(/年度[:：]?\s*(\d{4}).*?月份[:：]?\s*(\d{1,2})/);if(m){ym=m[1]+'-'+String(+m[2]).padStart(2,'0');break;}}
+    // find header row (料號)
+    let hr=-1;for(let i=0;i<Math.min(12,A.length);i++){if((A[i]||[]).some(c=>String(c).trim()==='料號')){hr=i;break;}}
+    if(hr<0){setStatus('Không nhận dạng được file貨齡');return;}
+    const start=hr+1;const num=x=>{const n=parseFloat(String(x==null?'':x).replace(/[, ]/g,''));return isFinite(n)?n:0;};
+    const btot=[[0,0],[0,0],[0,0],[0,0],[0,0]];let totQ=0,totA=0,imp=0;const items=[];
+    for(let i=start;i<A.length;i++){const r=A[i]||[];const code=String(r[0]||'').trim();if(!code||code==='料號')continue;
+      const tq=num(r[2]),ta=num(r[3]);if(!ta&&!tq)continue;
+      const b=[[num(r[4]),num(r[5])],[num(r[6]),num(r[7])],[num(r[8]),num(r[9])],[num(r[10]),num(r[11])],[num(r[12]),num(r[13])]];
+      const im=num(r[14]);for(let k=0;k<5;k++){btot[k][0]+=b[k][0];btot[k][1]+=b[k][1];}
+      totQ+=tq;totA+=ta;imp+=im;const agedAmt=b[2][1]+b[3][1]+b[4][1];let oldest=0;for(let k=4;k>=0;k--){if(b[k][1]>0||b[k][0]>0){oldest=k;break;}}
+      items.push({code:code,name:String(r[1]||'').slice(0,40),ta:Math.round(ta),tq:Math.round(tq),agedAmt:Math.round(agedAmt),oldest:oldest,imp:Math.round(im)});
+    }
+    const warn=items.filter(x=>x.agedAmt>0).sort((a,b)=>b.agedAmt-a.agedAmt).slice(0,60);
+    const key=ym||('import-'+Object.keys(AGINGDATA).length);
+    AGINGDATA[key]={month:key,totQ:Math.round(totQ),totA:Math.round(totA),imp:Math.round(imp),
+      buckets:AGE_BUCKETS.map((_,k)=>({name:AGE_BUCKETS[k],qty:Math.round(btot[k][0]),amt:Math.round(btot[k][1])})),
+      agedTotal:Math.round(items.reduce((s,x)=>s+x.agedAmt,0)),agedCount:items.filter(x=>x.agedAmt>0).length,warn:warn};
+    const sel=document.getElementById('agMonth');sel.innerHTML='';sel.options.length=0;
+    Object.keys(AGINGDATA).sort().forEach(m=>{const o=document.createElement('option');o.textContent=m;if(m===key)o.selected=true;sel.appendChild(o);});
+    renderAging();setStatus('已导入貨齡 '+key+' / Đã nhập tuổi tồn kho '+key);
+  }catch(err){setStatus('Lỗi đọc file');}};
+  rd.readAsArrayBuffer(f);ev.target.value='';
+}
+
 /* ===== edit binding ===== */
 document.addEventListener('input',e=>{
   const t=e.target,d=t.dataset;if(!d)return;
@@ -612,10 +822,12 @@ function updateMgf(){const g=(state.mgfAll&&state.mgfAll[mgfYear])||MGFDATA['202
   set('mgf-tot-rev',fmt(T.rev));set('mgf-tot-matRaw',fmt(T.matRaw));set('mgf-tot-other',fmt(T.other));
   set('mgf-tot-calc',fmt(T.mat));set('mgf-tot-labor',fmt(T.labor));set('mgf-tot-outso',fmt(T.outso));set('mgf-tot-oh',fmt(T.oh));
   set('mgf-tot-total',fmt(T.cogs));set('mgf-tot-gold',fmt(T.gross));
-  set('mgf-pct-calc',pct(T.rev>0?T.mat/T.rev:0));set('mgf-pct-labor',pct(T.rev>0?T.labor/T.rev:0));
-  set('mgf-pct-oh',pct(T.rev>0?T.oh/T.rev:0));set('mgf-pct-total',pct(T.rev>0?T.cogs/T.rev:0));
-  const pm={mat:out.mat,labor:g.labor,oh:g.oh,gross:out.gross},pmT={mat:T.mat,labor:T.labor,oh:T.oh,gross:T.gross};
-  Object.keys(pm).forEach(pk=>{for(let k=0;k<12;k++){const rv=N(g.rev[k]);set('mgf-pm-'+pk+'-'+k, rv>0?pct(N(pm[pk][k])/rv):'-');}set('mgf-pmt-'+pk, T.rev>0?pct(pmT[pk]/T.rev):'-');});
+  const rows={rev:[g.rev.map(N),T.rev,true,false],calc:[out.mat,T.mat,true,true],labor:[g.labor.map(N),T.labor,true,true],outso:[g.outso.map(N),T.outso,true,true],oh:[g.oh.map(N),T.oh,true,true],total:[out.cogs,T.cogs,true,true]};
+  Object.keys(rows).forEach(idk=>{const [arr,tt,sr,sc]=rows[idk];
+    set('mgf-rpt-'+idk, sr?(T.rev>0?pct(tt/T.rev):'-'):'');set('mgf-cpt-'+idk, sc?(T.cogs>0?pct(tt/T.cogs):'-'):'');
+    for(let k=0;k<12;k++){const rv=N(g.rev[k]),cg=out.cogs[k];
+      set('mgf-rp-'+idk+'-'+k, sr?(rv>0?pct(N(arr[k])/rv):'-'):'');set('mgf-cp-'+idk+'-'+k, sc?(cg>0?pct(N(arr[k])/cg):'-'):'');}});
+  renderMgfChart();
 }
 function loadReportsDefaultKeep(){ if(!state.mgfAll)state.mgfAll=JSON.parse(JSON.stringify(MGFDATA)); if(!state.inv||!state.recon)loadReportsDefault(); if(!state.mgfAll)state.mgfAll=JSON.parse(JSON.stringify(MGFDATA)); }
 function updateInv(){const tot=new Array(14).fill(0);let tEndQty=0,tEndAmt=0;
@@ -626,11 +838,11 @@ function updateRecon(){let sGl=0,sCost=0;state.recon.forEach((r,i)=>{const d=N(r
   const d=sGl-sCost;set('rec-tgl',fmt(sGl));set('rec-tcost',fmt(sCost));set('rec-td',fmt(d));set('rec-tok',d===0?'✓':'✗');}
 
 /* month selector for cost-center report */
-document.addEventListener('change',e=>{if(e.target.id==='rcMonth')renderRepCenter();if(e.target.id==='rrYear')renderRepRate();if(e.target.id==='ohSheet'||e.target.id==='ohYear')renderRepOH();if(e.target.id==='csDept'||e.target.id==='csYear')renderRepCS();if(e.target.id==='ocYear')renderRepOC();if(e.target.id==='mgfYear')renderRepMgf();if(e.target.id==='alYear')renderRepAlloc();if(e.target.id==='nxtMonth')renderNXT();});
+document.addEventListener('change',e=>{if(e.target.id==='rcMonth')renderRepCenter();if(e.target.id==='rrYear')renderRepRate();if(e.target.dataset&&e.target.dataset.fv!==undefined){state.fv[e.target.dataset.fv]=e.target.value;renderRepOH();return;}if(e.target.id==='ohSheet'||e.target.id==='ohYear')renderRepOH();if(e.target.id==='csDept'||e.target.id==='csYear')renderRepCS();if(e.target.id==='ocYear')renderRepOC();if(e.target.id==='mgfYear')renderRepMgf();if(e.target.id==='alYear')renderRepAlloc();if(e.target.id==='agMonth')renderAging();if(['cmpMetric','cmpYear','cmpMonth'].includes(e.target.id))renderCompare();});
 
 /* ===== tabs ===== */
-function tab(i){[0,1,2].forEach(k=>{document.getElementById('p'+k).classList.toggle('none',k!==i);document.querySelector('.tab[data-t="'+k+'"]').classList.toggle('on',k===i);});
-  if(i===0||i===1)refresh();if(i===2)renderReport(cur);}
+function tab(i){[0,1].forEach(k=>{document.getElementById('p'+k).classList.toggle('none',k!==i);document.querySelector('.tab[data-t="'+k+'"]').classList.toggle('on',k===i);});
+  if(i===0)renderReport(cur);}
 
 /* ===== persistence ===== */
 async function saveState(){try{await window.storage.set('costing_v3',JSON.stringify(state));setStatus('已保存 / Đã lưu '+new Date().toLocaleTimeString('vi-VN'));}catch(e){setStatus('Không lưu được ở môi trường này.');}}
@@ -640,7 +852,7 @@ async function loadState(){try{let r=await window.storage.get('costing_v3');
   if(r&&r.value){const s=JSON.parse(r.value);state.centers=s.centers;state.rates=s.rates;state.orders=s.orders;loadReportsDefault();fixUid();return true;}}catch(e){}
   return false;}
 function fixUid(){let mx=0;[...(state.rates||[]),...(state.orders||[])].forEach(o=>{const n=parseInt(String(o.id).replace(/\D/g,''));if(n>mx)mx=n;});uid=mx+1;
-  if(!state.mgfAll||!state.inv||!state.recon){if(state.mgf&&!state.mgfAll){state.mgfAll=JSON.parse(JSON.stringify(MGFDATA));state.mgfAll['2026']=state.mgf;}loadReportsDefault();}}
+  if(!state.mgfAll||!state.inv||!state.recon||!state.fv){if(state.mgf&&!state.mgfAll){state.mgfAll=JSON.parse(JSON.stringify(MGFDATA));state.mgfAll['2026']=state.mgf;}loadReportsDefault();}}
 function setStatus(s){document.getElementById('status').textContent=s;}
 
 /* ===== Excel import ===== */
@@ -715,6 +927,7 @@ function exportExcel(){
 /* ===== default report data (2026 thực tế) ===== */
 function loadReportsDefault(){
   if(!state.mgfAll)state.mgfAll=JSON.parse(JSON.stringify(MGFDATA));
+  if(!state.fv)state.fv=Object.assign({},FVDEFAULT);
   if(!state.inv)state.inv=[
     {cn:'原物料类',vn:'Nguyên vật liệu',mv:[[69472630,24329572951],[46913148,9838081532],[-10763209,-5430087424],[-966606,-288927678],[0,-1358979],[-30010,-856800033]],endQty:104625953},
     {cn:'半成品类',vn:'Bán thành phẩm',mv:[[4199029,7898465055],[1928134,12808460731],[-1843340,-13034791766],[-14067,-87438266],[0,0],[0,0]],endQty:4269756},
@@ -777,10 +990,10 @@ function loadDemo(force){
       {id:nid(),code:'VM011-2601020001',productCode:'',product:'',center:'V81020',month:'2026-01',qty:0,matRaw:0,sourceCode:'',qtyReceived:0,hours:44.5}],
     mgf:null,inv:null,recon:null};
   loadReportsDefault();
-  applyAllocation();renderCenters();renderRates();renderOrders();tab(0);setStatus('已载入示例 / Đã nạp số liệu mẫu (đơn giá 2023–2026).');
+  applyAllocation();tab(0);setStatus('已载入示例 / Đã nạp số liệu mẫu (2023–2026).');
 }
 
 /* ===== init ===== */
 (async function(){const ok=await loadState();
-  if(!ok)loadDemo(true);else{renderCenters();renderRates();renderOrders();tab(0);setStatus('已载入 / Đã tải dữ liệu đã lưu.');}})();
+  if(!ok)loadDemo(true);else{tab(0);setStatus('已载入 / Đã tải dữ liệu đã lưu.');}})();
 </script>
