@@ -92,13 +92,13 @@
   </div>
 
   <div class="tabs">
-    <div class="tab on" data-t="0" onclick="tab(0)"><span class="n">1</span>成本报表 / Báo cáo giá thành</div>
+    <div class="tab on" data-t="2" onclick="tab(2)"><span class="n">1</span>收入及費用 / Doanh thu &amp; Chi phí</div>
     <div class="tab" data-t="1" onclick="tab(1)"><span class="n">2</span>财务报表 / Báo cáo tài chính</div>
-    <div class="tab" data-t="2" onclick="tab(2)"><span class="n">3</span>收入及費用 / Doanh thu &amp; Chi phí</div>
+    <div class="tab" data-t="0" onclick="tab(0)"><span class="n">3</span>成本报表 / Báo cáo giá thành</div>
   </div>
 
   <!-- 成本报表 / Cost reports -->
-  <section class="panel" id="p0">
+  <section class="panel none" id="p0">
     <div class="subtabs" id="subtabs">
       <div class="subtab on" data-r="rc" onclick="rtab('rc')">成本中心/工资制费率 · Đơn giá &amp; TTCP</div>
       <div class="subtab" data-r="rm" onclick="rtab('rm')">料工费比较 · Liệu–Công–Phí</div>
@@ -182,7 +182,7 @@
     <div id="finChart" style="margin-top:16px"></div>
     <div id="finNote" style="margin-top:12px"></div>
   </section>
-  <section class="panel none" id="p2" style="padding:0;background:transparent;border:none;box-shadow:none">
+  <section class="panel" id="p2" style="padding:0;background:transparent;border:none;box-shadow:none">
     <iframe id="revFrame" title="Doanh thu & Chi phí" style="width:100%;height:84vh;border:1px solid var(--line);border-radius:14px;background:#EAEEF3" srcdoc="<!DOCTYPE html>
 <html lang=&quot;vi&quot;>
 <head>
@@ -3875,10 +3875,10 @@ function loadDemo(force){
       {id:nid(),code:'VM011-2601020001',productCode:'',product:'',center:'V81020',month:'2026-01',qty:0,matRaw:0,sourceCode:'',qtyReceived:0,hours:44.5}],
     mgf:null,inv:null,recon:null};
   loadReportsDefault();
-  applyAllocation();tab(0);setStatus('已载入示例 / Đã nạp số liệu mẫu (2023–2026).');
+  applyAllocation();tab(2);setStatus('已载入示例 / Đã nạp số liệu mẫu (2023–2026).');
 }
 
 /* ===== init ===== */
 (async function(){const ok=await loadState();
-  if(!ok)loadDemo(true);else{tab(0);setStatus('已载入 / Đã tải dữ liệu đã lưu.');}fetchRemoteData();})();
+  if(!ok)loadDemo(true);else{tab(2);setStatus('已载入 / Đã tải dữ liệu đã lưu.');}fetchRemoteData();})();
 </script>
