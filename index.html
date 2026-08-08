@@ -2717,9 +2717,9 @@ document.getElementById('dlTemplate').onclick=generateTemplate;
 document.getElementById('exportData').onclick=()=>{
   if(!DATA||!Object.keys(DATA).length){ toast('Chưa có dữ liệu để xuất. · 尚無資料',true); return; }
   const blob=new Blob([JSON.stringify(DATA,null,1)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='data.json';
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='revenue-data.json';
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  toast('✓ Đã xuất data.json — tải file này lên GitHub để mọi người thấy số mới · 已匯出，請上傳至 GitHub');
+  toast('✓ Đã xuất revenue-data.json — tải file này lên GitHub để mọi người thấy số mới · 已匯出，請上傳至 GitHub');
 };
 
 /* ====================== init / nạp dữ liệu ====================== */
