@@ -171,8 +171,7 @@
         <option value="MG">管理费用明细 / CP quản lý (tháng)</option>
         <option value="RD">研发费用明细 / CP R&D (tháng)</option>
         <option value="MF">制造费用明细 / CP SX chung (tháng)</option>
-        <option value="ISM">综合损益表(月) / KQKD theo tháng (cộng dồn)</option>
-        <option value="CFM">现金流量表(月) / LCTT theo tháng (cộng dồn)</option></select>
+        <option value="ISM">综合损益表(月) / KQKD theo tháng (cộng dồn)</option></select>
       <span class="co" id="finYearWrap">年/Năm:<select id="finYear" class="mini"></select> &nbsp;比较月/Tháng SS:<select id="finCmpMonth" class="mini"></select></span>
       <button onclick="document.getElementById('finImp').click()">⬆ Nhập file</button>
       <input id="finImp" class="file-in" type="file" accept=".xls,.xlsx" onchange="finImportBtn(event)">
@@ -3466,7 +3465,7 @@ function renderFinCmp(E,yr){
 
 function renderFin(){
   const stmt=(document.getElementById('finStmt')||{}).value||'IS';
-  const isExp=['SG','MG','RD','MF'].includes(stmt);const isMon=['ISM','CFM'].includes(stmt);const yw=document.getElementById('finYearWrap');if(yw)yw.style.display=(isExp||isMon)?'':'none';
+  const isExp=['SG','MG','RD','MF'].includes(stmt);const isMon=['ISM'].includes(stmt);const yw=document.getElementById('finYearWrap');if(yw)yw.style.display=(isExp||isMon)?'':'none';
   const cmp=document.getElementById('finCmpBox');if(cmp&&!isExp)cmp.innerHTML='';
   if(isMon){renderFinMonthly(stmt);return;}
   if(isExp){renderFinExp(stmt);return;}
