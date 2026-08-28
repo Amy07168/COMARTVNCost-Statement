@@ -170,7 +170,9 @@
         <option value="SG">推销费用明细 / CP bán hàng (tháng)</option>
         <option value="MG">管理费用明细 / CP quản lý (tháng)</option>
         <option value="RD">研发费用明细 / CP R&D (tháng)</option>
-        <option value="MF">制造费用明细 / CP SX chung (tháng)</option></select>
+        <option value="MF">制造费用明细 / CP SX chung (tháng)</option>
+        <option value="ISM">综合损益表(月) / KQKD theo tháng (cộng dồn)</option>
+        <option value="CFM">现金流量表(月) / LCTT theo tháng (cộng dồn)</option></select>
       <span class="co" id="finYearWrap">年/Năm:<select id="finYear" class="mini"></select> &nbsp;比较月/Tháng SS:<select id="finCmpMonth" class="mini"></select></span>
       <button onclick="document.getElementById('finImp').click()">⬆ Nhập file</button>
       <input id="finImp" class="file-in" type="file" accept=".xls,.xlsx" onchange="finImportBtn(event)">
@@ -265,14 +267,14 @@ h1,h2,h3{font-family:&quot;Space Grotesk&quot;,sans-serif;margin:0;letter-spacin
 
 /* ---------- Table ---------- */
 .tbl-scroll{overflow-x:auto;margin-top:16px;border:1px solid var(--line-2);border-radius:10px}
-table{border-collapse:collapse;width:100%;font-size:13px}
-th,td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line-2)}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}
-thead th{background:var(--surface-2);font-weight:600;color:var(--ink-2);font-size:12px;position:sticky;top:0}
-thead th:first-child{z-index:2}
-tbody tr:hover td{background:var(--surface-2)}
-tbody tr:hover td:first-child{background:var(--surface-2)}
-tr.total-row td{font-weight:700;border-top:2px solid var(--ink);background:#F0F3F8}
+.tbl-scroll table{border-collapse:collapse;width:100%;font-size:13px}
+.tbl-scroll th,.tbl-scroll td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line-2)}
+.tbl-scroll th:first-child,.tbl-scroll td:first-child{text-align:left;position:sticky;left:0;background:var(--surface)}
+.tbl-scroll thead th{background:var(--surface-2);font-weight:600;color:var(--ink-2);font-size:12px;position:sticky;top:0}
+.tbl-scroll thead th:first-child{z-index:2}
+.tbl-scroll tbody tr:hover td{background:var(--surface-2)}
+.tbl-scroll tbody tr:hover td:first-child{background:var(--surface-2)}
+.tbl-scroll tr.total-row td{font-weight:700;border-top:2px solid var(--ink);background:#F0F3F8}
 tr.total-row td:first-child{background:#F0F3F8}
 td.sumcol,th.sumcol{background:#EDF2FA}
 th.sumcol{color:var(--ink);font-weight:700}
@@ -2772,13 +2774,15 @@ const MF_DETAIL={"name":"制造费用明细","years":["2023","2024","2025","2026
 const FV_CORE={"薪資":"F","獎金":"V","加班費":"V","退休金":"V","租金支出":"F","文具用品":"V","國內旅費":"V","國外旅費":"V","運費":"V","電話費":"F","郵資":"V","修繕費":"V","廣告費":"V","廣告費-展覽":"V","水電瓦斯費":"V","勞保費":"F","健保費":"F","團體保險":"F","產物保險":"F","其他保險費":"F","交際費":"V","捐贈":"F","稅捐":"F","呆帳損失":"V","折舊(房屋及建物)":"F","折舊(機器設備)":"F","折舊(模具)":"F","折舊(運輸設備)":"F","折舊(辦公設備)":"F","折舊(租賃改良)":"F","折舊(其它設備)":"F","各項攤提":"F","伙食費":"F","職工福利":"F","研究發展費":"F","佣金支出":"V","訓練費":"F","進口費用":"V","出口費用":"V","保全費":"F","會計師費":"F","律師費":"F","顧問費":"F","認證費":"F","產品保固費用":"V","專利費":"F","書報雜誌":"F","包裝費":"V","銀行手續費":"V","雜項購置":"V","權利金":"V","管理費":"F","樣品費-樣品":"V","樣品費-打樣":"V","消耗品費":"V","委外加工費":"V","檢驗費":"V","加工費":"V","模具費":"V","交通費":"V","其他費用":"V","薪資支出":"F","獎金支出":"V","加班費支出":"V"};
 function fvCore(l){const i=String(l).indexOf("-");return i>=0?l.slice(i+1):l;}
 function fvOf(l){if(state.fv&&state.fv[l])return state.fv[l];return FV_CORE[fvCore(l)]||"V";}
+let IS_MONTHLY={"2023":{"銷貨收入":[9411886269,6281159135,12263059947,21465342008,24436032379,14839685741,24211911820,17579286543,19413928536,16311059254,7152995606,12489491110],"其他營業收入":[0,0,0,0,0,0,0,0,0,0,0,0],"營業收入合計":[9411886269,6281159135,12263059947,21465342008,24436032379,14839685741,24211911820,17579286543,19413928536,16311059254,7152995606,12489491110],"銷貨成本":[9903784491,7342543893,9826065942,17407505991,20596399230,12158149011,19745243306,14550955371,16040647730,12738875705,5784025202,10366436303],"營業毛利":[-491898222,-1061384758,2436994005,4057836017,3839633149,2681536730,4466668514,3028331172,3373280806,3572183549,1368970404,2123054807],"推銷費用":[28164368,26595583,9324822,78769696,36459844,80157186,91351825,53979051,52558280,130361458,64113572,22818238],"管理費用":[516381858,542227441,524065752,484717843,389690046,384565798,409057208,416324291,635302495,551722669,473970656,483414488],"研發費用":[0,0,0,0,0,0,0,0,0,0,0,0],"營業費用合計":[544546226,568823024,533390574,563487539,426149890,464722984,500409033,470303342,687860775,682084127,538084228,506232726],"其他收益及費損":[0,14901680,0,0,0,0,0,0,0,0,0,0],"營業淨利":[-1036444448,-1615306102,1903603431,3494348478,3413483259,2216813746,3966259481,2558027830,2685420031,2890099422,830886176,1616822081],"採用權益法之子公司利益份額":[0,0,0,0,0,0,0,0,0,0,0,0],"外幣兌換淨益(損)":[58039478,387941276,-209234724,77930096,391450391,254426756,105085424,290391985,124658195,214791859,143816614,-283573695],"利息收入":[609509,227451,310740,502527,1004247,597238,660316,536856,725269,824439,605109,1334747],"租金收入":[0,0,0,0,0,0,0,0,0,0,0,0],"其他收入":[111975511,71418345,145478329,160249927,84352037,79460401,161542074,39370418,138405226,90686200,91626030,79034540],"利息費用":[0,0,0,0,0,0,0,0,0,0,0,0],"什項支出":[0,0,0,0,0,0,0,0,0,0,0,0],"營業外收入及支出合計":[170624498,459587072,-63445655,238682550,476806675,334484395,267287814,330299259,263788690,306302498,236047753,-203204408],"稅前淨利":[-865819950,-1155719030,1840157776,3733031028,3890289934,2551298141,4233547295,2888327089,2949208721,3196401920,1066933929,1413617673],"所得稅費用":[0,0,0,0,0,0,0,0,0,0,0,0],"本期淨利":[-865819950,-1155719030,1840157776,3733031028,3890289934,2551298141,4233547295,2888327089,2949208721,3196401920,1066933929,1413617673],"本期綜合損益總額":[-865819950,-1155719030,1840157776,3733031028,3890289934,2551298141,4233547295,2888327089,2949208721,3196401920,1066933929,1413617673]},"2024":{"銷貨收入":[13207874542,9503208003,3699920608,9730192372,12464946576,6622236267,16467756601,8478643823,14533334876,11812789173,6170670850,18939605436],"其他營業收入":[0,0,0,0,0,0,0,0,0,0,0,0],"營業收入合計":[13207874542,9503208003,3699920608,9730192372,12464946576,6622236267,16467756601,8478643823,14533334876,11812789173,6170670850,18939605436],"銷貨成本":[11390209166,7730473054,3315161218,8704852690,12937175615,6123948278,16190017925,9023629377,15288778212,12247211382,6544270501,20131677928],"營業毛利":[1817665376,1772734949,384759390,1025339682,-472229039,498287989,277738676,-544985554,-755443336,-434422209,-373599651,-1192072492],"推銷費用":[14548078,540000,43400555,145085789,82729367,95418408,66527889,62620569,73493319,108719529,18376498,38174502],"管理費用":[507510932,465539084,574187717,491259370,522170501,524137416,727700117,634102183,679792588,658293954,667313073,643531666],"研發費用":[0,0,42490534,95842490,90797163,126614585,153972913,176433669,157139541,180501485,144717077,138094744],"營業費用合計":[522059010,466079084,660078806,732187649,695697031,746170409,948200919,873156421,910425448,947514968,830406648,819800912],"其他收益及費損":[-212500253,0,0,0,0,0,0,0,0,0,0,-2625000],"營業淨利":[1083106113,1306655865,-275319416,293152033,-1167926070,-247882420,-670462243,-1418141975,-1665868784,-1381937177,-1204006299,-2014498404],"採用權益法之子公司利益份額":[0,0,0,0,0,0,0,0,0,0,0,0],"外幣兌換淨益(損)":[519255024,120329722,77518179,225119888,3389993,507617562,-350523367,-146224099,14926428,1234054554,277109207,382865789],"利息收入":[1115582,662250,953180,1046165,848867,473331,1085975,2072565,308274295,99810083,64074178,1376707],"租金收入":[0,0,0,0,0,0,0,0,0,0,0,0],"其他收入":[380106505,148896373,120890076,76720320,74257488,68499363,89311675,76507880,74471801,96131501,102719988,23124028],"利息費用":[0,0,0,0,0,0,0,0,0,0,0,0],"什項支出":[0,0,0,0,0,0,0,0,0,0,0,0],"營業外收入及支出合計":[900477111,269888345,199361435,302886373,78496348,576590256,-260125717,-67643654,397672524,1429996138,443903373,407366524],"稅前淨利":[1983583224,1576544210,-75957981,596038406,-1089429722,328707836,-930587960,-1485785629,-1268196260,48058961,-760102926,-1607131880],"所得稅費用":[176258863,173383754,-20439938,61898677,-108892266,3378668,-56305852,-105300184,-122466268,-1515454,0,0],"本期淨利":[1807324361,1403160456,-55518043,534139729,-980537456,325329168,-874282108,-1380485445,-1145729992,49574415,-760102926,-1607131880],"本期綜合損益總額":[1807324361,1403160456,-55518043,534139729,-980537456,325329168,-874282108,-1380485445,-1145729992,49574415,-760102926,-1607131880]},"2025":{"銷貨收入":[12956827702,9626968604,12747011756,17822810138,6423973345,12125938740,16565780727,15416115078,14744611406,18617683195,16714219454,16363258724],"其他營業收入":[0,0,0,0,0,0,0,0,0,0,0,0],"營業收入合計":[12956827702,9626968604,12747011756,17822810138,6423973345,12125938740,16565780727,15416115078,14744611406,18617683195,16714219454,16363258724],"銷貨成本":[13230151865,10174361987,13112024987,19101917040,6292580293,13423907462,17620492870,15553372796,13761199198,17154815307,14450904733,13424396098],"營業毛利":[-273324163,-547393383,-365013231,-1279106902,131393052,-1297968722,-1054712143,-137257718,983412208,1462867888,2263314721,2938862626],"推銷費用":[68067218,67437840,75620525,80039614,54573862,156813714,131143126,363364416,110169351,133715298,127231828,127379269],"管理費用":[704270302,683849414,596361052,517141313,504720244,519598880,517117525,704870435,532848355,602284473,457390156,602544255],"研發費用":[223277930,213245493,295209685,262466854,387676529,174039046,167321291,210396204,308283629,216285663,251816217,422076497],"營業費用合計":[995615450,964532747,967191262,859647781,946970635,850451640,815581942,1278631055,951301335,952285434,836438201,1152000021],"其他收益及費損":[0,0,0,0,0,-2398484629,0,-1166400000,0,2513822503,-710036956,-3773180471],"營業淨利":[-1268939613,-1511926130,-1332204493,-2138754683,-815577583,-4546904991,-1870294085,-2582288773,32110873,3024404957,716839564,-1986317866],"採用權益法之子公司利益份額":[0,0,0,0,0,0,0,0,0,0,0,0],"外幣兌換淨益(損)":[-584814802,866113424,56709124,878986703,90678648,260015606,277953012,350000652,165076780,-139763864,186822810,-95622180],"利息收入":[936563,973466,847398,777090,922046,707933,574201,1522122,749501,729325,827548,1251114],"租金收入":[0,0,159790550,0,161776930,0,181880546,0,0,0,0,0],"其他收入":[203282914,67113363,12018250,6146000,35873151,15912000,3565373,20651342,3240532771,191999442,-162111869,33107913],"利息費用":[-5023307,0,0,0,0,0,0,0,0,-16286032,-89373819,-145106223],"什項支出":[0,0,0,0,0,0,0,0,0,0,0,0],"營業外收入及支出合計":[-385618632,934200253,229365322,885909793,289250775,276635539,463973132,372174116,3406359052,36678871,-63835330,-206369376],"稅前淨利":[-1654558245,-577725877,-1102839171,-1252844890,-526326808,-4270269452,-1406320953,-2210114657,3438469925,3061083828,653004234,-2192687242],"所得稅費用":[0,0,0,0,0,0,0,0,0,0,0,0],"本期淨利":[-1654558245,-577725877,-1102839171,-1252844890,-526326808,-4270269452,-1406320953,-2210114657,3438469925,3061083828,653004234,-2192687242],"本期綜合損益總額":[-1654558245,-577725877,-1102839171,-1252844890,-526326808,-4270269452,-1406320953,-2210114657,3438469925,3061083828,653004234,-2192687242]},"2026":{"銷貨收入":[11649665486,23324146032,15428315219,12480422142,13178363157,14264816967,13592351758,0,0,0,0,0],"其他營業收入":[0,0,0,0,0,0,0,0,0,0,0,0],"營業收入合計":[11649665486,23324146032,15428315219,12480422142,13178363157,14264816967,13592351758,0,0,0,0,0],"銷貨成本":[10677402751,21230364745,15092433417,11322252264,11247870272,12997573923,12110087551,0,0,0,0,0],"營業毛利":[972262735,2093781287,335881802,1158169878,1930492885,1267243044,1482264207,0,0,0,0,0],"推銷費用":[142246687,60434800,163506840,173003230,124060532,199137611,382039607,0,0,0,0,0],"管理費用":[421124066,454731650,551052554,730224676,598091938,253005278,3170235025,0,0,0,0,0],"研發費用":[220400957,240403420,279007550,218246824,207869230,232672019,206348459,0,0,0,0,0],"營業費用合計":[783771710,755569870,993566944,1121474730,930021700,684814908,3758623091,0,0,0,0,0],"其他收益及費損":[0,0,0,0,0,0,-104825814,0,0,0,0,0],"營業淨利":[188491025,1338211417,-657685142,36695148,1000471185,582428136,-2381184698,0,0,0,0,0],"採用權益法之子公司利益份額":[0,0,0,0,0,0,0,0,0,0,0,0],"外幣兌換淨益(損)":[-427640825,452418799,808182563,132193668,39841606,148596926,88495340,0,0,0,0,0],"利息收入":[1516253,1216832,752093,847698,895361,465901,1008298,0,0,0,0,0],"租金收入":[0,0,0,0,0,0,0,0,0,0,0,0],"其他收入":[19186733,0,37463500,34925500,115647613,56428938,18882000,0,0,0,0,0],"利息費用":[-157674131,-137418461,-160191171,-16173838,-16731466,-17289356,-17872473,0,0,0,0,0],"什項支出":[0,0,0,0,0,0,0,0,0,0,0,0],"營業外收入及支出合計":[-564611970,316217170,686206985,151793028,139653114,188202409,90513165,0,0,0,0,0],"稅前淨利":[-376120945,1654428587,28521843,188488176,1140124299,770630545,-2290671533,0,0,0,0,0],"所得稅費用":[0,0,47715795,-47715795,0,0,0,0,0,0,0,0],"本期淨利":[-376120945,1654428587,-19193952,236203971,1140124299,770630545,-2290671533,0,0,0,0,0],"本期綜合損益總額":[-376120945,1654428587,-19193952,236203971,1140124299,770630545,-2290671533,0,0,0,0,0]}};
+let CF_MONTHLY={"2023":{"12":{}},"2024":{"12":{}},"2025":{"12":{}},"2026":{"06":{},"07":{}}};
 const REMOTE_DATA_URL='https://raw.githubusercontent.com/Amy07168/ComartVN-/main/data.json';
-function collectData(){return {OHDATA:OHDATA,MGFDATA:MGFDATA,INVMONTH:INVMONTH,AGINGDATA:AGINGDATA,FINDATA:FINDATA,EXPDATA:EXPDATA,FINMONTH:FINMONTH,REWORK:REWORK,SCRAP:SCRAP,rates:state.rates,fv:state.fv,_ver:3,_time:new Date().toISOString()};}
+function collectData(){return {OHDATA:OHDATA,MGFDATA:MGFDATA,INVMONTH:INVMONTH,AGINGDATA:AGINGDATA,FINDATA:FINDATA,EXPDATA:EXPDATA,FINMONTH:FINMONTH,REWORK:REWORK,SCRAP:SCRAP,IS_MONTHLY:IS_MONTHLY,CF_MONTHLY:CF_MONTHLY,rates:state.rates,fv:state.fv,_ver:3,_time:new Date().toISOString()};}
 function exportDataJson(){try{const blob=new Blob([JSON.stringify(collectData())],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='data.json';document.body.appendChild(a);a.click();a.remove();setStatus('已导出 data.json — hãy tải lên GitHub (data.json) để mọi người tự đồng bộ');}catch(e){setStatus('Lỗi xuất data.json');}}
 function applyDataJson(d){if(!d||typeof d!=='object')return false;
   if(d.OHDATA)OHDATA=d.OHDATA;if(d.MGFDATA){MGFDATA=d.MGFDATA;MGFYEARS=Object.keys(MGFDATA).sort();}
   if(d.INVMONTH)INVMONTH=d.INVMONTH;if(d.AGINGDATA)AGINGDATA=d.AGINGDATA;if(d.FINDATA)FINDATA=d.FINDATA;
-  if(d.EXPDATA)EXPDATA=d.EXPDATA;if(d.FINMONTH)FINMONTH=d.FINMONTH;if(d.REWORK)REWORK=d.REWORK;if(d.SCRAP)SCRAP=d.SCRAP;
+  if(d.EXPDATA)EXPDATA=d.EXPDATA;if(d.FINMONTH)FINMONTH=d.FINMONTH;if(d.REWORK)REWORK=d.REWORK;if(d.SCRAP)SCRAP=d.SCRAP;if(d.IS_MONTHLY)IS_MONTHLY=d.IS_MONTHLY;if(d.CF_MONTHLY)CF_MONTHLY=d.CF_MONTHLY;
   if(d.rates)state.rates=d.rates;if(d.fv)state.fv=d.fv;return true;}
 function refreshAll(){const on=document.querySelector('.tab.on');const i=on?+on.dataset.t:0;tab(i);}
 function importDataJson(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();
@@ -2928,7 +2932,7 @@ function renderRepRate(){
   if(ys && ys.options.length!==years.length){ys.innerHTML=years.map(y=>`<option ${y==='2026'?'selected':''}>${y}</option>`).join('');if(!ys.value&&years.includes('2026'))ys.value='2026';}
   const yr=(ys&&ys.value)||years[years.length-1]||'2026';
   const ms=Array.from({length:12},(_,i)=>yr+'-'+String(i+1).padStart(2,'0'));
-  const rW0=140,rW1=140,rW2=120,rW3=80,rW4=100,rL1=rW0,rL2=rL1+rW1,rL3=rL2+rW2,rL4=rL3+rW3;
+  const rW0=178,rW1=150,rW2=134,rW3=118,rW4=108,rL1=rW0,rL2=rL1+rW1,rL3=rL2+rW2,rL4=rL3+rW3;
   let head=`<tr><th class="l" rowspan="2" style="${sk(0,rW0,6)}background:var(--head)">成本中心<small>TT chi phí</small></th><th class="l" rowspan="2" style="${sk(rL1,rW1,6)}background:var(--head)">成本项目<small>Khoản mục</small></th><th colspan="3" style="${sk(rL2,rW2+rW3+rW4,6)}background:#0a4f48">全年合计<small>Cộng cả năm</small></th>`;
   ms.forEach(m=>head+=`<th colspan="3">${m.slice(5)}月/T${+m.slice(5)}</th>`);head+=`</tr><tr>`;
   head+=`<th style="${sk(rL2,rW2,6)}background:var(--head)">金额<small>Tiền</small></th><th style="${sk(rL3,rW3,6)}background:var(--head)">工时<small>Giờ</small></th><th class="lab" style="${sk(rL4,rW4,6)}background:var(--lab)">单价<small>ĐG</small></th>`;
@@ -2976,7 +2980,7 @@ function renderRepMgf(){
     ['销货成本 / Giá vốn',null,false,'total',true,true],['营业毛利 / Lãi gộp',null,false,'gold',true,false]];
   const valOf=(key,lab,k)=> key==='rev'?N(g.rev[k]):(key?N(g[key][k]):(lab.startsWith('材料')?out.mat[k]:lab.startsWith('销货成本')?out.cogs[k]:out.gross[k]));
   const totOf=(key,lab)=> key?T[key]:(lab.startsWith('材料')?T.mat:lab.startsWith('销货成本')?T.cogs:T.gross);
-  const mW0=200,mW1=118,mW2=64,mW3=64,mL1=mW0,mL2=mL1+mW1,mL3=mL2+mW2;
+  const mW0=215,mW1=144,mW2=66,mW3=66,mL1=mW0,mL2=mL1+mW1,mL3=mL2+mW2;
   let h1=`<tr><th class="l" rowspan="2" style="${sk(0,mW0,6)}background:var(--head)">项目<small>Khoản mục</small></th><th class="gold" style="${sk(mL1,mW1+mW2+mW3,6)}color:#14201f" colspan="3">全年合计<small>Cộng năm</small></th>`;MONS12.forEach(m=>h1+=`<th colspan="3">${m}</th>`);h1+=`</tr>`;
   const sub=`<th>VND</th><th>占销收<small>%DT</small></th><th>占销成<small>%GV</small></th>`;
   let h2=`<tr><th class="gold" style="${sk(mL1,mW1,6)}color:#14201f">VND</th><th style="${sk(mL2,mW2,6)}background:var(--head)">占销收<small>%DT</small></th><th style="${sk(mL3,mW3,6)}background:var(--head)">占销成<small>%GV</small></th>`;MONS12.forEach(()=>h2+=sub);h2+=`</tr>`;
@@ -3362,12 +3366,57 @@ function barSignedSVG(labels,values){
 }
 
 function expEntry(key){if(key==='MF')return MF_DETAIL;return EXPDATA[key];}
+
+function renderFinMonthly(kind){
+  const ys=document.getElementById('finYear');
+  const src=kind==='ISM'?IS_MONTHLY:CF_MONTHLY;const years=Object.keys(src).sort();
+  if(!years.length){document.getElementById('finBox').innerHTML='<p class="hint">Chưa có dữ liệu tháng — hãy ⬆ Nhập file ERP.</p>';document.getElementById('finChart').innerHTML='';document.getElementById('finNote').innerHTML='';document.getElementById('finCmpBox').innerHTML='';return;}
+  if(ys.options.length!==years.length){ys.innerHTML=years.map(y=>`<option ${y==='2026'?'selected':''}>${y}</option>`).join('');if(!ys.value||years.indexOf(ys.value)<0)ys.value=years[years.length-1];}
+  const yr=ys.value||years[years.length-1];
+  const order=kind==='ISM'?FINDATA.IS_ORDER:FINDATA.CF_ORDER;
+  const monArr=kind==='ISM'?(k=>((IS_MONTHLY[yr]||{})[k]||new Array(12).fill(0))):(k=>{const Y=CF_MONTHLY[yr]||{};const a=[];for(let m=1;m<=12;m++){a.push(N((Y[String(m).padStart(2,'0')]||{})[k]||0));}return a;});
+  const name=kind==='ISM'?'综合损益表 / KQKD theo tháng':'现金流量表 / LCTT theo tháng';
+  const totRe=/合計|總計|净现金|凈現金|净增数|期末现金|期初现金|營業毛利|營業淨利|營業收入合計|稅前淨利|本期淨利|綜合損益|营业活动生成|投资活动生成|理财活动生成/;
+  const hdrRe=/现金流量$|現金流量$|调整项目|營業收入及支出|营业外收入及支出/;
+  const L0=0,W0=250,W1=138,L1=W0;
+  let head=`<tr><th class="l" style="${sk(L0,W0,6)}background:var(--head)">科目 / Khoản mục</th><th class="gold" style="${sk(L1,W1,6)}color:#14201f">累计/Cộng dồn</th>`;MONS12.forEach(m=>head+=`<th>${m}</th>`);head+=`</tr>`;
+  let body='';const cumRow=new Array(12).fill(0);
+  order.forEach(k=>{const arr=monArr(k);const cum=arr.reduce((a,b)=>a+b,0);const has=arr.some(v=>v!==0);
+    const lbl=`${k}${FIN_LBL[k]?` <small>${FIN_LBL[k]}</small>`:''}`;
+    if(!has && hdrRe.test(k)){body+=`<tr><td class="l" style="${sk(L0,W0,3,'#eef4f3')};font-weight:700;color:#0a4f48">${lbl}</td><td style="${sk(L1,W1,3,'#eef4f3')}"></td>${MONS12.map(()=>'<td></td>').join('')}</tr>`;return;}
+    if(!has && kind==='ISM' && !totRe.test(k))return;
+    const isTot=totRe.test(k);let tds='';arr.forEach(v=>tds+=`<td>${fmt(v)}</td>`);
+    body+=`<tr${isTot?' class="total"':''}><td class="l" style="${sk(L0,W0,3,isTot?'#0a4f48':'#fff')}">${isTot?'<b>'+lbl+'</b>':lbl}</td><td class="calc" style="${sk(L1,W1,3,isTot?'#0a4f48':'#fff7db')}">${fmt(cum)}</td>${tds}</tr>`;});
+  document.getElementById('finBox').innerHTML=`<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  document.getElementById('finCmpBox').innerHTML='';
+  // chart + note
+  const monsWithData=[];for(let m=0;m<12;m++){let s=0;order.forEach(k=>s+=Math.abs(monArr(k)[m]));if(s)monsWithData.push(m);}
+  const lastM=monsWithData.length?monsWithData[monsWithData.length-1]+1:0;
+  if(kind==='ISM'){
+    const rev=monArr('銷貨收入'),net=monArr('本期淨利'),gm=monArr('營業毛利');
+    document.getElementById('finChart').innerHTML=`<h4 style="margin:8px 0 4px;color:#0a4f48">Doanh thu theo tháng / 每月销货收入 (${yr})</h4>${barYearSVG(MONS12.map(m=>m.split('/')[1]),rev)}
+      <h4 style="margin:12px 0 4px;color:#0a4f48">Lợi nhuận sau thuế theo tháng / 每月净利 (${yr})</h4>${barSignedSVG(MONS12.map(m=>m.split('/')[1]),net)}`;
+    const cumRev=rev.reduce((a,b)=>a+b,0),cumNet=net.reduce((a,b)=>a+b,0),cumGm=gm.reduce((a,b)=>a+b,0);
+    let best=0;for(let m=1;m<12;m++)if(rev[m]>rev[best])best=m;
+    document.getElementById('finNote').innerHTML=finNoteBox([
+      `Luỹ kế đến T${lastM}/${yr}: doanh thu <b>${fmt(cumRev)}</b>, lãi gộp <b>${fmt(cumGm)}</b> (${cumRev?pct(cumGm/cumRev):'-'}), LNST <b style="color:${cumNet>=0?'#0f6d63':'#c0392b'}">${fmt(cumNet)}</b>.`,
+      `Tháng doanh thu cao nhất: <b>T${best+1}</b> = ${fmt(rev[best])}.`,
+      `Mỗi cột tháng là số phát sinh trong tháng; cột <b>累计/Cộng dồn</b> = tổng luỹ kế từ đầu năm.`]);
+  }else{
+    const opv=monArr('营业活动生成之净现金'),endv=monArr('期末现金及约当现金余额');
+    document.getElementById('finChart').innerHTML=`<h4 style="margin:8px 0 4px;color:#0a4f48">Dòng tiền HĐKD theo tháng / 每月营业净现金 (${yr})</h4>${barSignedSVG(MONS12.map(m=>m.split('/')[1]),opv)}`;
+    document.getElementById('finNote').innerHTML=finNoteBox([
+      `LCTT theo tháng lấy từ 現金流量表 (kỳ) của từng file ERP — nạp tháng nào có tháng đó; hiện có: ${Object.keys(CF_MONTHLY[yr]||{}).map(m=>'T'+(+m)).join(', ')||'chưa có'}.`,
+      `Cột <b>累计/Cộng dồn</b> = tổng các tháng đã nạp. Để đủ 12 tháng, nạp lần lượt các file ERP theo tháng.`]);
+  }
+}
+
 function renderFinExp(key){
   const E=expEntry(key);const ys=document.getElementById('finYear');
   if(ys.options.length!==E.years.length){ys.innerHTML=E.years.map(y=>`<option ${y==='2026'?'selected':''}>${y}</option>`).join('');if(!ys.value)ys.value='2026';}
   const yr=ys.value||'2026';const rows=E.data[yr]||[];
   const rowT=E.accounts.map((a,i)=>(rows[i]||[]).reduce((s,x)=>s+N(x),0));const g=rowT.reduce((a,b)=>a+b,0);
-  const L0=0,W0=200,W1=48,W2=120,W3=76,L1=W0,L2=L1+W1,L3=L2+W2;
+  const L0=0,W0=212,W1=50,W2=136,W3=78,L1=W0,L2=L1+W1,L3=L2+W2;
   let head=`<tr><th class="l" style="${sk(L0,W0,6)}background:var(--head)">科目 / Khoản mục</th><th style="${sk(L1,W1,6)}background:var(--head)">F/V</th><th class="gold" style="${sk(L2,W2,6)}color:#14201f">全年合计</th><th style="${sk(L3,W3,6)}background:var(--head)">占比%</th>`;MONS12.forEach(m=>head+=`<th>${m}</th>`);head+=`</tr>`;
   const colT=new Array(12).fill(0),fTot=new Array(12).fill(0),vTot=new Array(12).fill(0);let fY=0,vY=0;let body='';
   E.accounts.forEach((a,i)=>{const vals=rows[i]||[];const fv=fvOf(a);let tds='';for(let k=0;k<12;k++){const v=N(vals[k]);colT[k]+=v;if(fv==='F')fTot[k]+=v;else vTot[k]+=v;tds+=`<td>${fmt(v)}</td>`;}
@@ -3417,8 +3466,9 @@ function renderFinCmp(E,yr){
 
 function renderFin(){
   const stmt=(document.getElementById('finStmt')||{}).value||'IS';
-  const isExp=['SG','MG','RD','MF'].includes(stmt);const yw=document.getElementById('finYearWrap');if(yw)yw.style.display=isExp?'':'none';
+  const isExp=['SG','MG','RD','MF'].includes(stmt);const isMon=['ISM','CFM'].includes(stmt);const yw=document.getElementById('finYearWrap');if(yw)yw.style.display=(isExp||isMon)?'':'none';
   const cmp=document.getElementById('finCmpBox');if(cmp&&!isExp)cmp.innerHTML='';
+  if(isMon){renderFinMonthly(stmt);return;}
   if(isExp){renderFinExp(stmt);return;}
   const pers=finPeriods();
   const asofL=pp=>{const m=(FINDATA.asof&&FINDATA.asof[pp])||(pp==='2026'?'6':null);return m&&+m<12?' (T1–T'+(+m)+')':'';};
@@ -3433,18 +3483,18 @@ function renderFin(){
   const nc=showPct?pers.length*2+1:pers.length+1;
   let head;
   if(showPct){
-    let h1=`<tr><th class="l" rowspan="2" style="${sk(0,260,6)}background:var(--head)">科目 / Khoản mục</th>`;pers.forEach(pp=>h1+=`<th colspan="2">${pp}${asofL(pp)}</th>`);h1+=`</tr>`;
+    let h1=`<tr><th class="l" rowspan="2" style="${sk(0,288,6)}background:var(--head)">科目 / Khoản mục</th>`;pers.forEach(pp=>h1+=`<th colspan="2">${pp}${asofL(pp)}</th>`);h1+=`</tr>`;
     let h2='<tr>';pers.forEach(()=>h2+=`<th>金额/VND</th><th>${baseName}</th>`);h2+='</tr>';head=h1+h2;
-  }else head=`<tr><th class="l" style="${sk(0,260,6)}background:var(--head)">科目 / Khoản mục</th>`+pers.map(pp=>`<th>${pp}${asofL(pp)}</th>`).join('')+`</tr>`;
+  }else head=`<tr><th class="l" style="${sk(0,288,6)}background:var(--head)">科目 / Khoản mục</th>`+pers.map(pp=>`<th>${pp}${asofL(pp)}</th>`).join('')+`</tr>`;
   let body='';
   order.forEach(k=>{
-    if(k[0]==='§'){body+=`<tr style="background:#0a4f48;color:#fff"><td class="l" colspan="${nc}" style="${sk(0,260,3,'#0a4f48')};color:#fff;font-weight:700">${k.slice(1)}</td></tr>`;return;}
+    if(k[0]==='§'){body+=`<tr style="background:#0a4f48;color:#fff"><td class="l" colspan="${nc}" style="${sk(0,288,3,'#0a4f48')};color:#fff;font-weight:700">${k.slice(1)}</td></tr>`;return;}
     const vals=pers.map(pp=>finGet(stmt,pp)[k]);const has=vals.some(v=>v!=null);
     const lbl=`${k}${FIN_LBL[k]?` <small>${FIN_LBL[k]}</small>`:''}`;
-    if(!has){body+=`<tr><td class="l" style="${sk(0,260,3,'#eef4f3')};font-weight:700;color:#0a4f48">${lbl}</td>`+pers.map(()=>showPct?'<td></td><td></td>':'<td></td>').join('')+`</tr>`;return;}
+    if(!has){body+=`<tr><td class="l" style="${sk(0,288,3,'#eef4f3')};font-weight:700;color:#0a4f48">${lbl}</td>`+pers.map(()=>showPct?'<td></td><td></td>':'<td></td>').join('')+`</tr>`;return;}
     const isTot=totRe.test(k);
     let tds='';pers.forEach((pp,idx)=>{const v=vals[idx];tds+=`<td>${v==null?'-':fmt(v)}</td>`;if(showPct){const b=baseOf(pp);tds+=`<td class="calcr" style="font-size:11px">${(v!=null&&b)?pct(v/b):''}</td>`;}});
-    body+=`<tr${isTot?' class="total"':''}><td class="l" style="${sk(0,260,3,isTot?'#0a4f48':'#fff')}">${isTot?'<b>'+lbl+'</b>':lbl}</td>${tds}</tr>`;});
+    body+=`<tr${isTot?' class="total"':''}><td class="l" style="${sk(0,288,3,isTot?'#0a4f48':'#fff')}">${isTot?'<b>'+lbl+'</b>':lbl}</td>${tds}</tr>`;});
   document.getElementById('finBox').innerHTML=`<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
   // charts + commentary
   const yrs=Object.keys(FINDATA.IS);
@@ -3521,6 +3571,10 @@ function importFin(ev){
     const mgA=getA('管理費用明細表');if(mgA)applyExp(EXPDATA.MG,year,extractMonthly(mgA));
     const rdA=getA('研发費用明細表')||getA('研發費用明細表');if(rdA)applyExp(EXPDATA.RD,year,extractMonthly(rdA));
     const mfA=getA('制造費用明細表')||getA('製造費用明細表');if(mfA)applyExp(MF_DETAIL,year,extractMonthly(mfA));
+    const imA=getA('期間綜合損益表IFRS')||getA('期间综合损益表IFRS');
+    if(imA){const mc={};(imA[7]||[]).forEach((c,j)=>{const m=String(c).trim().match(/^(\d{1,2})月$/);if(m)mc[+m[1]]=j;});const mo={};imA.forEach(r=>{const lab=String((r[0]||'')).trim();if(FINDATA.IS_ORDER.indexOf(lab)>=0){const a=[];for(let m=1;m<=12;m++)a.push(mc[m]!=null?Nm(r[mc[m]]):0);mo[lab]=a;}});IS_MONTHLY[year]=mo;}
+    const pcfA=getA('現金流量表')||getA('现金流量表');
+    if(pcfA){const rows={};pcfA.forEach(r=>{let lab=String((r[0]||'')).trim();if(!lab)lab=String((r[1]||'')).trim();if(lab&&FINDATA.CF_ORDER.indexOf(lab)>=0){const v=num(r[8]);if(v!=null)rows[lab]=v;}});if(!CF_MONTHLY[year])CF_MONTHLY[year]={};CF_MONTHLY[year][String(+endM).padStart(2,'0')]=rows;}
     const yv=document.getElementById('finYear');if(yv)yv.value=year;
     renderFin();setStatus('已导入 ERP '+year+' (đến T'+endM+') — Cập nhật 损益/资产/现金 + chi tiết 推销/管理/研发/制造 theo tháng');
   }catch(err){setStatus('Lỗi đọc file ERP tài chính');}};
