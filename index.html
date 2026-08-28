@@ -111,7 +111,7 @@
     </div>
     <div class="repwrap">
       <div id="r_rc" class="on"><div class="rephead"><h3>① 成本中心汇总 / Tổng hợp trung tâm chi phí</h3>
-        <span class="co">Tháng/月:</span><select id="rcMonth" class="mini"></select><button onclick="exportRep(['rcBox','rrBox'],'ttcp-don-gia.xlsx')" style="margin-left:auto">⬇ Excel</button></div>
+        <span class="co">Tháng/月:</span><select id="rcMonth" class="mini"></select><button onclick="document.getElementById('rcImp').click()" style="margin-left:auto">⬆ Nhập file费率</button><input id="rcImp" class="file-in" type="file" accept=".xls,.xlsx" onchange="importRate(event)"><button onclick="exportRep(['rcBox','rrBox'],'ttcp-don-gia.xlsx')">⬇ Excel</button></div>
         <div class="scroll" id="rcBox"></div>
         <div class="rephead" style="margin-top:16px"><h3>② 工资制费率表 (cả năm) / Đơn giá lương–chi phí</h3><span class="co">年/Năm:</span><select id="rrYear" class="mini"></select><span class="co">单位成本 = 金额 ÷ 工时 · kéo ngang xem 12 tháng →</span></div>
         <div class="scroll" id="rrBox"></div></div>
@@ -3597,7 +3597,44 @@ const MHEAD=['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
 function dlMatrix(col0,rows,fname){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([[col0,...MHEAD],...rows]),'data');XLSX.writeFile(wb,fname);}
 function readMx(ev,cb){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});cb(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true}));}catch(err){setStatus('Lỗi đọc file');}};rd.readAsArrayBuffer(f);ev.target.value='';}
 function mgfTemplate(){const g=state.mgfAll[mgfYear];dlMatrix('料工费/'+mgfYear,[['销货收入/rev',...g.rev],['料/matRaw',...g.matRaw],['其他销货成本/other',...g.other],['直接人工/labor',...g.labor],['委外加工费/outso',...g.outso],['制造费用/oh',...g.oh]],'mau-lieu-cong-phi-'+mgfYear+'.xlsx');}
-function importMgf(ev){readMx(ev,A=>{const g=state.mgfAll[mgfYear];A.slice(1).forEach(r=>{const k=String(r[0]||'');const a=MHEAD.map((_,i)=>Nm(r[i+1]));if(/rev|销货收入/.test(k))g.rev=a;else if(/matRaw|^料/.test(k))g.matRaw=a;else if(/other|其他/.test(k))g.other=a;else if(/labor|人工/.test(k))g.labor=a;else if(/outso|委外/.test(k))g.outso=a;else if(/oh|制造费用/.test(k))g.oh=a;});renderRepMgf();setStatus('已更新料工费 '+mgfYear);});}
+function importMgf(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const shN=wb.SheetNames.find(n=>/料工費|料工费/.test(n))||wb.SheetNames[0];
+    const A=XLSX.utils.sheet_to_json(wb.Sheets[shN],{header:1,raw:true});
+    const lab=r=>String((r&&r[1]!=null&&r[1]!=='')?r[1]:(r&&r[0])||'').trim();
+    const isERP=A.some(r=>lab(r)==='銷貨收入');
+    if(isERP){
+      const yr=(f.name.match(/20\d{2}/)||[mgfYear])[0];let mcol=null;
+      const findMC=r=>{const mc={};(r||[]).forEach((c,j)=>{const m=String(c).trim().match(/^(\d{1,2})月$/);if(m)mc[+m[1]]=j;});return Object.keys(mc).length>=6?mc:null;};
+      const gr=(r,mc)=>{const a=[];for(let m=1;m<=12;m++)a.push(mc[m]!=null?Nm(r[mc[m]]):0);return a;};
+      let block=null,last=null;
+      for(let i=0;i<A.length;i++){const mc=findMC(A[i]);if(mc){mcol=mc;continue;}const L=lab(A[i]||[]);
+        if(L==='銷貨收入'&&mcol){block={rev:gr(A[i],mcol),matRaw:new Array(12).fill(0),other:new Array(12).fill(0),labor:new Array(12).fill(0),outso:new Array(12).fill(0),oh:new Array(12).fill(0)};last=block;}
+        else if(block&&mcol){if(L==='料')block.matRaw=gr(A[i],mcol);else if(L==='其他銷貨成本')block.other=gr(A[i],mcol);else if(L==='直接人工')block.labor=gr(A[i],mcol);else if(L==='委外加工費')block.outso=gr(A[i],mcol);else if(L==='製造費用')block.oh=gr(A[i],mcol);}}
+      if(!last){setStatus('Không nhận dạng được 料工費');return;}
+      if(!state.mgfAll)state.mgfAll={};state.mgfAll[yr]=last;MGFDATA[yr]=last;MGFYEARS=Object.keys(MGFDATA).sort();mgfYear=yr;
+      const ys=document.getElementById('mgfYear');if(ys){ys.innerHTML=MGFYEARS.map(y=>`<option ${y===yr?'selected':''}>${y}</option>`).join('');ys.value=yr;}
+      renderRepMgf();setStatus('已导入料工費(ERP) '+yr+' — Đã nhập trực tiếp từ file 料工費比較');
+    } else {
+      const g=state.mgfAll[mgfYear];A.slice(1).forEach(r=>{const k=String(r[0]||'');const a=MHEAD.map((_,i)=>Nm(r[i+1]));if(/rev|销货收入/.test(k))g.rev=a;else if(/matRaw|^料/.test(k))g.matRaw=a;else if(/other|其他/.test(k))g.other=a;else if(/labor|人工/.test(k))g.labor=a;else if(/outso|委外/.test(k))g.outso=a;else if(/oh|制造费用/.test(k))g.oh=a;});renderRepMgf();setStatus('已更新料工费 '+mgfYear);
+    }
+  }catch(err){setStatus('Lỗi đọc file 料工費')}};rd.readAsArrayBuffer(f);ev.target.value='';}
+function importRate(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const sh=wb.SheetNames.find(n=>/費率|费率|axct311/.test(n));if(!sh){setStatus('Không thấy sheet 工資製費率表');return;}
+    const A=XLSX.utils.sheet_to_json(wb.Sheets[sh],{header:1,raw:true});
+    let year=null,mcol=null;const cc=s=>{const m=String(s).match(/\((V\d+)\)/);return m?m[1]:null;};const pend={};
+    for(let i=0;i<A.length;i++){const r=A[i]||[];
+      const ym=String(r[0]||'').replace(/,/g,'').match(/^(20\d{2})$/);if(ym){year=ym[1];continue;}
+      if(/金額|金额/.test(String(r[3]||''))){mcol={};for(let m=1;m<=12;m++)mcol[m]=3+(m-1)*3;continue;}
+      const center=cc(r[1]);const item=String(r[2]||'').trim();
+      if(center&&year&&mcol&&/人工|製費|制费/.test(item)){for(let m=1;m<=12;m++){const amt=Nm(r[mcol[m]]);const hrs=Nm(r[mcol[m]+1]);if(!amt&&!hrs)continue;const key=center+'|'+year+'-'+String(m).padStart(2,'0');const en=pend[key]||(pend[key]={center:center,month:year+'-'+String(m).padStart(2,'0'),laborAmt:0,ohAmt:0,hours:0});if(/人工/.test(item)){en.laborAmt=amt;en.hours=hrs;}else{en.ohAmt=amt;if(!en.hours)en.hours=hrs;}}}}
+    const imp=Object.values(pend);if(!imp.length){setStatus('Không đọc được số liệu費率');return;}
+    const keys=new Set(imp.map(e=>e.center+'|'+e.month));
+    state.rates=state.rates.filter(r=>!keys.has(r.center+'|'+r.month));
+    imp.forEach(e=>{e.id=nid();state.rates.push(e);});
+    renderReport('rc');setStatus('已导入工资费率 '+imp.length+' 行 — Đã nhập đơn giá lương/chi phí');
+  }catch(err){setStatus('Lỗi đọc file費率')}};rd.readAsArrayBuffer(f);ev.target.value='';}
 function ohTemplate(){const yr=document.getElementById('ohYear').value,sid=document.getElementById('ohSheet').value;dlMatrix('会计科目/'+yr,OHDATA.accounts.map((a,i)=>[a.cn,...(((OHDATA.data[yr]||{})[sid]||[])[i]||new Array(12).fill(0))]),'mau-che-tao-phi-'+yr+'.xlsx');}
 function importOh(ev){const yr=document.getElementById('ohYear').value,sid=document.getElementById('ohSheet').value;readMx(ev,A=>{const by={};A.slice(1).forEach(r=>by[String(r[0]||'').trim()]=MHEAD.map((_,i)=>Nm(r[i+1])));if(!OHDATA.data[yr])OHDATA.data[yr]={};OHDATA.data[yr][sid]=OHDATA.accounts.map(a=>by[a.cn]||new Array(12).fill(0));renderRepOH();setStatus('已更新制造费用 '+yr+'/'+sid);});}
 function agTemplate(){const wb=XLSX.utils.book_new();const a=[['料號','名稱','庫存數量','庫存金額','180天內數量','180天內金額','181-360數量','181-360金額','361-720數量','361-720金额','721-999數量','721-999金額','1000天以上數量','1000天以上金額','存貨跌價金額']];const ws=XLSX.utils.aoa_to_sheet([['庫存成本貨齡分析表'],['年度：2026 月份：1'],[],a[0]]);XLSX.utils.book_append_sheet(wb,ws,'存貨貨齡分析表');XLSX.writeFile(wb,'mau-tuoi-ton-kho.xlsx');}
