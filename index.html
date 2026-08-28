@@ -3421,6 +3421,7 @@ function renderFin(){
   const cmp=document.getElementById('finCmpBox');if(cmp&&!isExp)cmp.innerHTML='';
   if(isExp){renderFinExp(stmt);return;}
   const pers=finPeriods();
+  const asofL=pp=>{const m=(FINDATA.asof&&FINDATA.asof[pp])||(pp==='2026'?'6':null);return m&&+m<12?' (T1–T'+(+m)+')':'';};
   let order;
   if(stmt==='IS')order=FINDATA.IS_ORDER;
   else if(stmt==='BS')order=['§资产 / TÀI SẢN'].concat(FINDATA.BS_ASSET,['§负债及权益 / NGUỒN VỐN (Nợ + Vốn CSH)'],FINDATA.BS_LIAB);
@@ -3432,9 +3433,9 @@ function renderFin(){
   const nc=showPct?pers.length*2+1:pers.length+1;
   let head;
   if(showPct){
-    let h1=`<tr><th class="l" rowspan="2" style="${sk(0,260,6)}background:var(--head)">科目 / Khoản mục</th>`;pers.forEach(pp=>h1+=`<th colspan="2">${pp}${pp==='2026'?' (T1–6)':''}</th>`);h1+=`</tr>`;
+    let h1=`<tr><th class="l" rowspan="2" style="${sk(0,260,6)}background:var(--head)">科目 / Khoản mục</th>`;pers.forEach(pp=>h1+=`<th colspan="2">${pp}${asofL(pp)}</th>`);h1+=`</tr>`;
     let h2='<tr>';pers.forEach(()=>h2+=`<th>金额/VND</th><th>${baseName}</th>`);h2+='</tr>';head=h1+h2;
-  }else head=`<tr><th class="l" style="${sk(0,260,6)}background:var(--head)">科目 / Khoản mục</th>`+pers.map(pp=>`<th>${pp}${pp==='2026'?' (T1–6)':''}</th>`).join('')+`</tr>`;
+  }else head=`<tr><th class="l" style="${sk(0,260,6)}background:var(--head)">科目 / Khoản mục</th>`+pers.map(pp=>`<th>${pp}${asofL(pp)}</th>`).join('')+`</tr>`;
   let body='';
   order.forEach(k=>{
     if(k[0]==='§'){body+=`<tr style="background:#0a4f48;color:#fff"><td class="l" colspan="${nc}" style="${sk(0,260,3,'#0a4f48')};color:#fff;font-weight:700">${k.slice(1)}</td></tr>`;return;}
@@ -3483,6 +3484,21 @@ function renderFin(){
   }
 }
 function finNoteBox(lines){return `<div style="background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 16px"><b style="color:#0a4f48">📌 Nhận xét / 分析</b><ul style="margin:8px 0 0;padding-left:20px;line-height:1.7">`+lines.map(t=>`<li>${t}</li>`).join('')+`</ul></div>`;}
+function extractMonthly(A){
+  let hr=-1;for(let i=0;i<Math.min(14,A.length);i++){if((A[i]||[]).some(c=>/^\s*1月\s*$/.test(String(c)))){hr=i;break;}}
+  if(hr<0)hr=7;
+  const mcol={};(A[hr]||[]).forEach((c,j)=>{const m=String(c).trim().match(/^(\d{1,2})月$/);if(m)mcol[+m[1]]=j;});
+  const rows={},order=[];
+  for(let i=hr+1;i<A.length;i++){const lab=String((A[i]||[])[0]||'').trim();if(!lab||/合計|合计/.test(lab))continue;if(lab.indexOf('-')<0)continue;
+    const arr=[];for(let m=1;m<=12;m++){const c=mcol[m];arr.push(c!=null?Nm((A[i]||[])[c]):0);}
+    rows[lab]=arr;order.push(lab);}
+  return {rows:rows,order:order};
+}
+function applyExp(ds,year,ext){if(!ds||!ext.order.length)return;
+  ext.order.forEach(lab=>{if(ds.accounts.indexOf(lab)<0){if(!(ext.rows[lab]||[]).some(v=>v!==0))return;ds.accounts.push(lab);Object.keys(ds.data).forEach(y=>{if(!ds.data[y])ds.data[y]=[];ds.data[y].push(new Array(12).fill(0));});}});
+  ds.data[year]=ds.accounts.map(a=>ext.rows[a]||new Array(12).fill(0));
+  if(ds.years.indexOf(year)<0){ds.years.push(year);ds.years.sort();}
+}
 function importFin(ev){
   const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();
   rd.onload=e=>{try{
@@ -3490,19 +3506,24 @@ function importFin(ev){
     const num=x=>{const n=parseFloat(String(x==null?'':x).replace(/[, ]/g,''));return isFinite(n)?n:null;};
     const getA=nm=>{const s=wb.Sheets[nm];return s?XLSX.utils.sheet_to_json(s,{header:1,raw:true}):null;};
     const isA=getA('累積綜合損益表IFRS')||getA('綜合損益表IFRS')||getA('當期綜合損益表IFRS');
-    if(!isA){setStatus('Không thấy sheet 損益表 trong file');return;}
-    // detect period
-    let per='';for(let i=0;i<Math.min(10,isA.length);i++){const line=(isA[i]||[]).join(' ');const m=line.match(/年度期别[:：]?\s*(\d{4})\/(\d{1,2})-(\d{1,2})/);if(m){per=m[3]==='12'&&m[2]==='1'?m[1]:m[1]+'-'+String(+m[3]).padStart(2,'0');break;}}
-    if(!per)per=(f.name.match(/20\d{2}/)||['import'])[0];
-    const IS={};isA.forEach(r=>{const lab=String((r[0]||'')).trim();if(FINDATA.IS_ORDER.includes(lab))IS[lab]=num(r[12]);});
+    if(!isA){setStatus('Không thấy sheet 損益表 trong file ERP');return;}
+    let year='',endM='';
+    for(let i=0;i<Math.min(10,isA.length);i++){const line=(isA[i]||[]).join(' ');const m=line.match(/年度期别[:：]?\s*(\d{4})\/(\d{1,2})-(\d{1,2})/);if(m){year=m[1];endM=String(+m[3]);break;}}
+    if(!year){const fn=f.name.match(/(20\d{2})(\d{2})?/);year=fn?fn[1]:'2026';endM=fn&&fn[2]?String(+fn[2]):'12';}
+    const IS={};isA.forEach(r=>{const lab=String((r[0]||'')).trim();if(FINDATA.IS_ORDER.indexOf(lab)>=0)IS[lab]=num(r[12]);});
     const BS={};const bsA=getA('資產負債表IFRS')||getA('期間資產負債表');
-    if(bsA)bsA.forEach(r=>{[[0,9],[16,21]].forEach(([lc,vc])=>{const lab=String((r[lc]||'')).trim();if(lab&&(/合計|總計|權益|权益/.test(lab))){const v=num(r[vc]);if(v!=null)BS[lab]=v;}});});
+    if(bsA)bsA.forEach(r=>{[[0,9],[16,21]].forEach(pr=>{const lab=String((r[pr[0]]||'')).trim();if(lab&&!/科目|資產負債|越南|制表|页次|頁次|幣別/.test(lab)){const v=num(r[pr[1]]);if(v!=null)BS[lab]=v;}});});
     const CF={};const cfA=getA('累積現金流量表')||getA('現金流量表');
-    if(cfA)cfA.forEach(r=>{const lab=String((r[0]||'')).trim();if(CF_ORDER.includes(lab))CF[lab]=num(r[8]);});
-    if(/^\d{4}$/.test(per)){FINDATA.IS[per]=IS;FINDATA.BS[per]=BS;FINDATA.CF[per]=CF;}
-    else FINMONTH[per]={IS:IS,BS:BS,CF:CF};
-    renderFin();setStatus('已导入财报 '+per+' / Đã nhập báo cáo tài chính '+per);
-  }catch(err){setStatus('Lỗi đọc file tài chính');}};
+    if(cfA)cfA.forEach(r=>{const lab=String((r[0]||'')).trim();if(CF_ORDER.indexOf(lab)>=0)CF[lab]=num(r[8]);});
+    FINDATA.IS[year]=IS;FINDATA.BS[year]=BS;FINDATA.CF[year]=CF;
+    if(!FINDATA.asof)FINDATA.asof={};FINDATA.asof[year]=endM;
+    const sgA=getA('推銷費用明細');if(sgA)applyExp(EXPDATA.SG,year,extractMonthly(sgA));
+    const mgA=getA('管理費用明細表');if(mgA)applyExp(EXPDATA.MG,year,extractMonthly(mgA));
+    const rdA=getA('研发費用明細表')||getA('研發費用明細表');if(rdA)applyExp(EXPDATA.RD,year,extractMonthly(rdA));
+    const mfA=getA('制造費用明細表')||getA('製造費用明細表');if(mfA)applyExp(MF_DETAIL,year,extractMonthly(mfA));
+    const yv=document.getElementById('finYear');if(yv)yv.value=year;
+    renderFin();setStatus('已导入 ERP '+year+' (đến T'+endM+') — Cập nhật 损益/资产/现金 + chi tiết 推销/管理/研发/制造 theo tháng');
+  }catch(err){setStatus('Lỗi đọc file ERP tài chính');}};
   rd.readAsArrayBuffer(f);ev.target.value='';
 }
 function downloadFinTemplate(){
@@ -3531,7 +3552,7 @@ function agTemplate(){const wb=XLSX.utils.book_new();const a=[['料號','名稱'
 function expTemplate(key){const E=EXPDATA[key];const yr=document.getElementById('finYear').value||'2026';dlMatrix('科目/'+E.name+'/'+yr,E.accounts.map((a,i)=>[a,...(((E.data[yr]||[])[i])||new Array(12).fill(0))]),'mau-'+key+'-'+yr+'.xlsx');}
 function importExp(key,ev){const yr=document.getElementById('finYear').value||'2026';readMx(ev,A=>{const E=EXPDATA[key];const by={};A.slice(1).forEach(r=>by[String(r[0]||'').trim()]=MHEAD.map((_,i)=>Nm(r[i+1])));E.data[yr]=E.accounts.map(a=>by[a]||new Array(12).fill(0));renderFin();setStatus('已更新 '+E.name+' '+yr);});}
 function finTemplateBtn(){const s=document.getElementById('finStmt').value;if(['SG','MG','RD'].includes(s))expTemplate(s);else if(s==='MF')ohTemplate();else downloadFinTemplate();}
-function finImportBtn(ev){const s=document.getElementById('finStmt').value;if(['SG','MG','RD'].includes(s))importExp(s,ev);else if(s==='MF')importOh(ev);else importFin(ev);}
+function finImportBtn(ev){importFin(ev);}
 
 /* ===== rework (重工/反工) & scrap (报废) ===== */
 function renderRework(){
