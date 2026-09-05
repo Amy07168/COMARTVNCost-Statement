@@ -2921,7 +2921,8 @@ function renderRepCenter(){
     <th class="l">分摊方式<small>Cách phân bổ</small></th><th>金额(VND)<small>Số tiền</small></th><th>工时<small>Giờ công</small></th><th>单位成本<small>Đơn giá</small></th></tr></thead><tbody>`;
   state.centers.forEach(c=>{const r=rateMap()[rateKey(c.id,m)];if(!r)return;const rt=ratesOf(c.id,m);
     h+=`<tr><td class="l"><b>${esc(c.id)}</b> ${esc(c.name)}</td><td class="l">1:人工 / Nhân công</td><td class="l">1:实际工时 / Giờ công TT</td>
-      <td>${fmt(N(r.laborAmt))}</td><td>${fmt(N(r.hours))}</td><td class="calcl">${fmt(rt.lab,2)}</td></tr>`;
+      <td>${fmt(N(r.laborAmt))}</td><td>${fmt(N(r.hours))}</td><td class="calcl">${fmt(rt.lab,2)}</td></tr>`;});
+  state.centers.forEach(c=>{const r=rateMap()[rateKey(c.id,m)];if(!r)return;const rt=ratesOf(c.id,m);
     h+=`<tr><td class="l"><b>${esc(c.id)}</b> ${esc(c.name)}</td><td class="l">2:制费一 / CP chung</td><td class="l">1:实际工时 / Giờ công TT</td>
       <td>${fmt(N(r.ohAmt))}</td><td>${fmt(N(r.hours))}</td><td class="calc">${fmt(rt.oh,2)}</td></tr>`;});
   h+=`</tbody></table>`;document.getElementById('rcBox').innerHTML=h;
@@ -2937,8 +2938,8 @@ function renderRepRate(){
   head+=`<th style="${sk(rL2,rW2,6)}background:var(--head)">金额<small>Tiền</small></th><th style="${sk(rL3,rW3,6)}background:var(--head)">工时<small>Giờ</small></th><th class="lab" style="${sk(rL4,rW4,6)}background:var(--lab)">单价<small>ĐG</small></th>`;
   ms.forEach(()=>head+=`<th>金额<small>Tiền</small></th><th>工时<small>Giờ</small></th><th class="lab">单价<small>ĐG</small></th>`);head+=`</tr>`;
   const rows=[];
-  state.centers.forEach(c=>{
-    ['lab','oh'].forEach(kind=>{
+  ['lab','oh'].forEach(kind=>{
+    state.centers.forEach(c=>{
       const label=kind==='lab'?'1:人工 / Nhân công':'2:制费一 / CP chung';let tAmt=0,tHrs=0;let cells='';
       ms.forEach(m=>{const r=rateMap()[rateKey(c.id,m)];const amt=r?N(kind==='lab'?r.laborAmt:r.ohAmt):0;const hrs=r?N(r.hours):0;
         tAmt+=amt;tHrs+=hrs;const u=hrs>0?amt/hrs:0;
