@@ -2772,7 +2772,7 @@ function applyDataJson(d){if(!d||typeof d!=='object')return false;
   if(d.OHDATA)OHDATA=d.OHDATA;if(d.MGFDATA){MGFDATA=d.MGFDATA;MGFYEARS=Object.keys(MGFDATA).sort();state.mgfAll=JSON.parse(JSON.stringify(MGFDATA));}
   if(d.INVMONTH)INVMONTH=d.INVMONTH;if(d.AGINGDATA)AGINGDATA=d.AGINGDATA;if(d.FINDATA)FINDATA=d.FINDATA;
   if(d.EXPDATA)EXPDATA=d.EXPDATA;if(d.FINMONTH)FINMONTH=d.FINMONTH;if(d.REWORK)REWORK=d.REWORK;if(d.SCRAP)SCRAP=d.SCRAP;if(d.MF_DETAIL)MF_DETAIL=d.MF_DETAIL;if(d.IS_MONTHLY)IS_MONTHLY=d.IS_MONTHLY;if(d.CF_MONTHLY)CF_MONTHLY=d.CF_MONTHLY;
-  if(d.rates)state.rates=d.rates;if(d.fv)state.fv=d.fv;return true;}
+  if(d.rates)state.rates=d.rates;if(d.fv)state.fv=d.fv;try{normalizeAging();}catch(e){}return true;}
 function refreshAll(){const on=document.querySelector('.tab.on');const i=on?+on.dataset.t:0;tab(i);}
 function importDataJson(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();
   rd.onload=e=>{try{applyDataJson(JSON.parse(e.target.result));refreshAll();setStatus('已载入 data.json / Đã nạp dữ liệu');}catch(err){setStatus('data.json không hợp lệ');}};rd.readAsText(f);ev.target.value='';}
@@ -3737,7 +3737,18 @@ function scTemplate(){const wb=XLSX.utils.book_new();const a=[['原因','部门'
 /* ===== inventory aging report ===== */
 const AGE_BUCKETS=['180天以內 / ≤180 ngày','181-360天','361-720天','721-999天','1000天以上 / >1000'];
 const AGE_COLORS=['#0f6d63','#3a7d44','#a8600a','#c0392b','#7d1f1f'];
-function renderAging(){
+function normalizeAging(){
+  const SUMW=/總計|总计|合計|合计|在制品|在製品|在途|備抵|备抵|資產負債|资产负债|資産|差異|差异/;
+  Object.keys(AGINGDATA||{}).forEach(mo=>{const d=AGINGDATA[mo];if(!d||!d.warn)return;
+    const dbl=d.warn.some(it=>SUMW.test(String(it.code||''))||SUMW.test(String(it.name||'')));
+    if(dbl){ // dữ liệu cũ bị cộng cả dòng 總計 -> nhân đôi -> chia lại
+      d.totA=Math.round((d.totA||0)/2);d.totQ=Math.round((d.totQ||0)/2);d.imp=Math.round((d.imp||0)/2);d.agedTotal=Math.round((d.agedTotal||0)/2);
+      (d.buckets||[]).forEach(b=>{b.amt=Math.round((b.amt||0)/2);b.qty=Math.round((b.qty||0)/2);});
+      d.warn=d.warn.filter(it=>!(SUMW.test(String(it.code||''))||SUMW.test(String(it.name||''))));
+    }
+  });
+}
+function renderAging(){normalizeAging();
   const sel=document.getElementById('agMonth');const months=Object.keys(AGINGDATA).sort();
   if(sel.options.length!==months.length)sel.innerHTML=months.map(m=>`<option ${m===months[months.length-1]?'selected':''}>${m}</option>`).join('');
   const mo=sel.value||months[months.length-1];const d=AGINGDATA[mo];const box=document.getElementById('agBox');
