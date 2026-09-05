@@ -3754,7 +3754,7 @@ function renderAging(){
   // warning table (top aged items)
   let wt=`<h4 style="margin:12px 0 6px;color:#a12b21">Danh sách cảnh báo (Top ${d.warn.length} theo giá trị hàng 361+ ngày) / 长库龄大额明细</h4>
     <div class="scroll"><table><thead><tr><th class="l">料號/Mã</th><th class="l">名稱/Tên</th><th>庫存金额/Tồn</th><th>SL/数量</th><th>≥361天金额/Giá trị lâu</th><th>库龄区间/Nhóm tuổi</th><th>存货跌价/Dự phòng</th></tr></thead><tbody>`;
-  d.warn.forEach(it=>{const col=AGE_COLORS[it.oldest]||'#a12b21';
+  const SUMW=/總計|总计|合計|合计|在制品|在製品|在途|備抵|备抵|資產負債|资产负债|資産|差異|差异/;d.warn.filter(it=>!SUMW.test(String(it.code||''))&&!SUMW.test(String(it.name||''))).forEach(it=>{const col=AGE_COLORS[it.oldest]||'#a12b21';
     wt+=`<tr><td class="l">${esc(it.code)}</td><td class="l" style="max-width:260px">${esc(it.name)}</td><td>${fmt(it.ta)}</td><td>${fmt(it.tq,0)}</td>
       <td class="calc" style="font-weight:700">${fmt(it.agedAmt)}</td><td class="l"><span style="color:${col};font-weight:700">${AGE_BUCKETS[it.oldest]}</span></td><td class="calcr">${fmt(it.imp)}</td></tr>`;});
   wt+=`</tbody></table></div>`;
@@ -3779,7 +3779,7 @@ function importAging(ev){
     const start=hr+1;const num=x=>{const n=parseFloat(String(x==null?'':x).replace(/[, ]/g,''));return isFinite(n)?n:0;};
     const btot=[[0,0],[0,0],[0,0],[0,0],[0,0]];let totQ=0,totA=0,imp=0;const items=[];
     for(let i=start;i<A.length;i++){const r=A[i]||[];const code=String(r[0]||'').trim();if(!code||code==='料號')continue;
-      if(/總計|总计|合計|合计|在制品|在製品|在途|備抵|备抵|資產負債|资产负债|資産|差異|差异|跌價|跌价/.test(code))break;
+      const SUMRE=/總計|总计|合計|合计|在制品|在製品|在途|備抵|备抵|資產負債|资产负债|資産|差異|差异|跌價|跌价/;if(SUMRE.test(code)||SUMRE.test(String(r[1]||'')))break;
       const tq=num(r[2]),ta=num(r[3]);if(!ta&&!tq)continue;
       const b=[[num(r[4]),num(r[5])],[num(r[6]),num(r[7])],[num(r[8]),num(r[9])],[num(r[10]),num(r[11])],[num(r[12]),num(r[13])]];
       const im=num(r[14]);for(let k=0;k<5;k++){btot[k][0]+=b[k][0];btot[k][1]+=b[k][1];}
