@@ -102,8 +102,6 @@
     <div class="subtabs" id="subtabs">
       <div class="subtab on" data-r="rc" onclick="rtab('rc')">成本中心/工资制费率 · Đơn giá &amp; TTCP</div>
       <div class="subtab" data-r="rm" onclick="rtab('rm')">料工费比较 · Liệu–Công–Phí</div>
-      <div class="subtab" data-r="oh" onclick="rtab('oh')">制造费用明细 · Chi phí SX chung</div>
-      <div class="subtab" data-r="cs" onclick="rtab('cs')">成本结构图 · Cơ cấu chi phí</div>
       <div class="subtab" data-r="ag" onclick="rtab('ag')">庫存貨齡 · Tuổi tồn kho</div>
       <div class="subtab" data-r="rw" onclick="rtab('rw')">重工/反工 · Rework</div>
       <div class="subtab" data-r="sc" onclick="rtab('sc')">报废 · Phế phẩm</div>
@@ -117,15 +115,6 @@
         <div class="scroll" id="rrBox"></div></div>
       <div id="r_rm"><div class="rephead"><h3>料工费比较 / So sánh Liệu–Công–Phí</h3><span class="co">年/Năm:</span><select id="mgfYear" class="mini"></select><span class="co">VND · % theo tháng</span><button onclick="mgfTemplate()" style="margin-left:auto">📄 Mẫu</button><button onclick="document.getElementById('rmImp').click()">⬆ Nhập</button><input id="rmImp" class="file-in" type="file" accept=".xls,.xlsx" onchange="importMgf(event)"><button onclick="exportRep(['rmBox'],'lieu-cong-phi.xlsx')">⬇ Excel</button></div>
         <div class="scroll" id="rmBox"></div><div id="mgfChart" style="margin-top:16px"></div></div>
-      <div id="r_oh"><div class="rephead"><h3>制造费用明细表 / Chi phí sản xuất chung</h3>
-        <span class="co">年/Năm:</span><select id="ohYear" class="mini"></select>
-        <span class="co">部门/Bộ phận:</span><select id="ohSheet" class="mini"></select><button onclick="ohTemplate()" style="margin-left:auto">📄 Mẫu</button><button onclick="document.getElementById('ohImp').click()">⬆ Nhập</button><input id="ohImp" class="file-in" type="file" accept=".xls,.xlsx" onchange="importOh(event)"><button onclick="exportRep(['ohBox'],'chi-phi-sx-chung.xlsx')">⬇ Excel</button></div>
-        <div class="scroll" id="ohBox"></div><div id="ohChart" style="margin-top:16px"></div></div>
-      <div id="r_cs"><div class="rephead"><h3>成本结构图 / Biểu đồ cơ cấu chi phí</h3>
-        <span class="co">Top khoản - 年/Năm:</span><select id="csYear" class="mini"></select>
-        <span class="co">部门/Bộ phận:</span><select id="csDept" class="mini"></select>
-        <button onclick="exportCS()" style="margin-left:auto">⬇ Excel</button></div>
-        <div id="csBox"></div></div>
       <div id="r_ag"><div class="rephead"><h3>庫存成本貨齡分析表 / Phân tích tuổi tồn kho</h3>
         <span class="co">月份/Tháng:</span><select id="agMonth" class="mini"></select>
         <button onclick="document.getElementById('agImp').click()">⬆ Nhập file tháng</button>
@@ -2911,7 +2900,7 @@ function renderResults(c){if(!document.getElementById("resbody"))return;
 let cur='rc';let mgfYear='2026';
 function rtab(k){cur=k;document.querySelectorAll('.subtab').forEach(s=>s.classList.toggle('on',s.dataset.r===k));
   document.querySelectorAll('.repwrap>div').forEach(d=>d.classList.toggle('on',d.id==='r_'+k));renderReport(k);}
-function renderReport(k){({rc:()=>{renderRepCenter();renderRepRate();},rm:renderRepMgf,oh:renderRepOH,cs:renderRepCS,ag:renderAging,rw:renderRework,sc:renderScrap,cmp:renderCompare}[k]||(()=>{}))();}
+function renderReport(k){({rc:()=>{renderRepCenter();renderRepRate();},rm:renderRepMgf,ag:renderAging,rw:renderRework,sc:renderScrap,cmp:renderCompare}[k]||(()=>{}))();}
 
 function renderRepCenter(){
   const sel=document.getElementById('rcMonth');const ms=allMonths();
