@@ -3712,14 +3712,22 @@ function importRework(ev){const f=ev.target.files&&ev.target.files[0];if(!f)retu
     renderRework();setStatus('已导入重工 '+added+' 单 / Đã nhập '+added+' công lệnh rework');
   }catch(err){setStatus('Lỗi đọc file rework');}};rd.readAsArrayBuffer(f);ev.target.value='';}
 function importScrap(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();
-  rd.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});const sh=wb.Sheets['报废']||wb.Sheets[wb.SheetNames[0]];const A=XLSX.utils.sheet_to_json(sh,{header:1,raw:false});
-    const CLS={'1315':'原料/NVL','1313':'半成品/BTP','1311':'成品/TP'};const num=x=>{const n=parseFloat(String(x==null?'':x).replace(/[, ]/g,''));return isFinite(n)?Math.abs(n):0;};let added=0;
-    for(let i=2;i<A.length;i++){const r=A[i]||[];const dt=r[4];if(!dt)continue;const dm=String(dt).match(/(\d{4})[-/](\d{1,2})/);if(!dm)continue;const year=dm[1],mk=String(+dm[2]).padStart(2,'0');
+  rd.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});const sh=wb.Sheets['报废']||wb.Sheets['報廢']||wb.Sheets[wb.SheetNames[0]];const A=XLSX.utils.sheet_to_json(sh,{header:1,raw:true});
+    const CLS={'1315':'原料/NVL','1313':'半成品/BTP','1311':'成品/TP'};const num=x=>{const n=parseFloat(String(x==null?'':x).replace(/[, ]/g,''));return isFinite(n)?Math.abs(n):0;};
+    const ymOf=dt=>{if(dt instanceof Date&&!isNaN(dt))return[String(dt.getFullYear()),String(dt.getMonth()+1).padStart(2,'0')];const s=String(dt||'');let m=s.match(/(\d{4})[-/.](\d{1,2})/);if(m)return[m[1],String(+m[2]).padStart(2,'0')];m=s.match(/^(\d{2})[-/.](\d{1,2})[-/.]\d{1,2}/);if(m)return['20'+m[1],String(+m[2]).padStart(2,'0')];return null;};
+    // find header row (料号/异动日期) then data start
+    let hr=1;for(let i=0;i<Math.min(8,A.length);i++){if((A[i]||[]).some(c=>String(c).trim()==='异动日期'||String(c).trim()==='料号')){hr=i;break;}}
+    const fresh={};let added=0;
+    for(let i=hr+1;i<A.length;i++){const r=A[i]||[];const ym=ymOf(r[4]);if(!ym)continue;const[year,mk]=ym;
       const cls=CLS[String(r[9]||'').trim()]||'其他/Khác';const qty=num(r[11]),amt=num(r[20]);if(!amt&&!qty)continue;
-      const Y=SCRAP[year]||(SCRAP[year]={});const d=Y[mk]||(Y[mk]={qty:0,amount:0,byClass:{},items:[]});if(!d.items)d.items=[];d.qty+=qty;d.amount+=amt;const c=d.byClass[cls]||(d.byClass[cls]={qty:0,amount:0});c.qty+=qty;c.amount+=amt;d.items.push([String(r[5]||'').trim(),String(r[6]||'').trim(),String(r[7]||'').slice(0,44),String(r[0]||'').trim(),cls.split('/')[0],Math.round(qty),Math.round(amt)]);added++;}
-    // round
-    Object.values(SCRAP).forEach(Y=>Object.values(Y).forEach(d=>{d.qty=Math.round(d.qty);d.amount=Math.round(d.amount);Object.values(d.byClass).forEach(c=>{c.qty=Math.round(c.qty);c.amount=Math.round(c.amount);});}));
-    renderScrap();setStatus('已导入报废 '+added+' 笔 / Đã nhập '+added+' dòng phế phẩm');
+      const Y=fresh[year]||(fresh[year]={});const d=Y[mk]||(Y[mk]={qty:0,amount:0,byClass:{},items:[]});
+      d.qty+=qty;d.amount+=amt;const c=d.byClass[cls]||(d.byClass[cls]={qty:0,amount:0});c.qty+=qty;c.amount+=amt;
+      d.items.push([String(r[5]||'').trim(),String(r[6]||'').trim(),String(r[7]||'').slice(0,44),String(r[0]||'').trim(),cls.split('/')[0],Math.round(qty),Math.round(amt)]);added++;}
+    if(!added){setStatus('Không đọc được dòng phế phẩm nào — kiểm tra định dạng file');return;}
+    // REPLACE (không cộng dồn) các tháng có trong file
+    Object.keys(fresh).forEach(y=>{if(!SCRAP[y])SCRAP[y]={};Object.keys(fresh[y]).forEach(m=>{const d=fresh[y][m];d.qty=Math.round(d.qty);d.amount=Math.round(d.amount);Object.values(d.byClass).forEach(c=>{c.qty=Math.round(c.qty);c.amount=Math.round(c.amount);});SCRAP[y][m]=d;});});
+    const scy=document.getElementById('scYear');if(scy){const yrs=Object.keys(fresh).sort();if(yrs.length)scy.value=yrs[yrs.length-1];}
+    renderScrap();setStatus('已导入报废 '+added+' 笔 / Đã nhập '+added+' dòng phế phẩm (thay thế các tháng có trong file)');
   }catch(err){setStatus('Lỗi đọc file báo phế');}};rd.readAsArrayBuffer(f);ev.target.value='';}
 function rwTemplate(){const wb=XLSX.utils.book_new();const a=[['工单号码','料件编号','生产数量','投入工时（分）','投入工时（小时）','原因','重工费用','承担部门','月份(如 6月)']];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),'重工');XLSX.writeFile(wb,'mau-rework.xlsx');}
