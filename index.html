@@ -3629,7 +3629,7 @@ function importRate(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return
       const ym=String(r[0]||'').replace(/,/g,'').match(/^(20\d{2})$/);if(ym){year=ym[1];continue;}
       if(/金額|金额/.test(String(r[3]||''))){mcol={};for(let m=1;m<=12;m++)mcol[m]=3+(m-1)*3;continue;}
       const center=cc(r[1]);const item=String(r[2]||'').trim();
-      if(center&&year&&mcol&&/人工|製費|制费/.test(item)){for(let m=1;m<=12;m++){const amt=Nm(r[mcol[m]]);const hrs=Nm(r[mcol[m]+1]);if(!amt&&!hrs)continue;const key=center+'|'+year+'-'+String(m).padStart(2,'0');const en=pend[key]||(pend[key]={center:center,month:year+'-'+String(m).padStart(2,'0'),laborAmt:0,ohAmt:0,hours:0});if(/人工/.test(item)){en.laborAmt=amt;en.hours=hrs;}else{en.ohAmt=amt;if(!en.hours)en.hours=hrs;}}}}
+      if(center&&year&&mcol&&/人工|製費|制费/.test(item)){for(let m=1;m<=12;m++){const amt=N(r[mcol[m]]);const hrs=N(r[mcol[m]+1]);if(!amt&&!hrs)continue;const key=center+'|'+year+'-'+String(m).padStart(2,'0');const en=pend[key]||(pend[key]={center:center,month:year+'-'+String(m).padStart(2,'0'),laborAmt:0,ohAmt:0,hours:0});if(/人工/.test(item)){en.laborAmt=amt;en.hours=hrs;}else{en.ohAmt=amt;if(!en.hours)en.hours=hrs;}}}}
     const imp=Object.values(pend);if(!imp.length){setStatus('Không đọc được số liệu費率');return;}
     const keys=new Set(imp.map(e=>e.center+'|'+e.month));
     state.rates=state.rates.filter(r=>!keys.has(r.center+'|'+r.month));
