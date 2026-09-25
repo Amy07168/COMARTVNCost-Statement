@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Tính giá thành theo công đoạn / 成本计算</title>
+<title>越南怡业财报表 · BÁO CÁO TÀI CHÍNH COMART</title>
 <style>
   :root{
     --ink:#14201f;--panel:#fff;--bg:#eef2f1;--line:#d3dcda;--muted:#5c6b69;--soft:#f4f7f6;
@@ -77,15 +77,15 @@
 </style>
 
 <div class="wrap">
-  <h1>Tính giá thành theo công đoạn <span style="color:var(--muted);font-weight:400">/ 成本计算</span></h1>
-  <div class="sub">Giá thành theo <b>công lệnh</b> · NC &amp; CP chung theo <b>giờ công thực tế</b> từng <b>công đoạn</b> · Bán thành phẩm chuyển tiếp theo <b>đơn giá × SL</b> · kèm 6 báo cáo song ngữ Trung–Việt.</div>
+  <h1>越南怡业财报表 <span style="color:var(--muted);font-weight:400">· BÁO CÁO TÀI CHÍNH COMART</span></h1>
+  <div class="sub">越南怡業責任有限公司 · COMART Việt Nam · <b>Doanh thu &amp; Chi phí</b> · <b>Báo cáo tài chính</b> · <b>Báo cáo giá thành</b> · song ngữ Trung–Việt.</div>
 
   <div class="toolbar">
     <button class="pri" onclick="saveState()">💾 Lưu / 保存</button>
     <button onclick="exportDataJson()">⬇ Xuất data.json</button>
     <button onclick="document.getElementById('dataImp').click()">⬆ Nạp data.json</button>
     <input id="dataImp" class="file-in" type="file" accept=".json" onchange="importDataJson(event)">
-    <button onclick="exportExcel()">⬇ Xuất tất cả (Excel)</button>
+    <button onclick="exportTabReports()">⬇ Xuất tất cả (Excel)</button>
     <button class="ghost" onclick="loadDemo(true)">↺ Nạp lại mẫu</button>
     <input id="imp" class="file-in" type="file" accept=".xls,.xlsx,.csv" onchange="importExcel(event)">
     <span class="spacer"></span><span class="status" id="status">—</span>
@@ -3899,6 +3899,29 @@ function importExcel(ev){const f=ev.target.files[0];if(!f)return;const center=do
   rd.readAsArrayBuffer(f);}
 
 /* ===== Excel export (full workbook) ===== */
+function exportTabReports(){
+  try{
+    const on=document.querySelector('.tab.on');const ti=on?+on.dataset.t:0;
+    const wb=XLSX.utils.book_new();let n=0;const used={};
+    const addBox=(boxId,name)=>{const box=document.getElementById(boxId);if(!box)return;box.querySelectorAll('table').forEach((t,i)=>{let base=(name+(i>0?('_'+(i+1)):'')).slice(0,28);let k=base,c=1;while(used[k]){k=(base.slice(0,26)+'_'+(++c));}used[k]=1;try{const ws=XLSX.utils.table_to_sheet(t,{raw:true});XLSX.utils.book_append_sheet(wb,ws,k);n++;}catch(e){}});};
+    if(ti===1){
+      const sel=document.getElementById('finStmt');const orig=sel?sel.value:'IS';
+      [['IS','KetQuaKD'],['BS','CanDoiKT'],['CF','LuuChuyenTT'],['SG','CP_BanHang'],['MG','CP_QuanLy'],['RD','CP_RD'],['MF','CP_SXChung'],['ISM','KQKD_thang']].forEach(([k,nm])=>{if(sel){sel.value=k;}renderFin();addBox('finBox',nm);});
+      if(sel){sel.value=orig;}renderFin();
+      XLSX.writeFile(wb,'bao-cao-tai-chinh-tatca.xlsx');
+      setStatus('✓ Đã xuất '+n+' bảng của tab Báo cáo tài chính');
+    } else if(ti===0){
+      const orig=cur;
+      [['rc','DonGia_TTCP',['rcBox','rrBox']],['rm','LieuCongPhi',['rmBox']],['ag','TuoiTonKho',['agBox']],['rw','Rework',['rwBox']],['sc','PhePham',['scBox']],['cmp','SoSanh',['cmpTbl','cmpCum']]].forEach(([k,nm,boxes])=>{renderReport(k);boxes.forEach((b,i)=>addBox(b,nm+(i>0?('_'+(i+1)):'')));});
+      renderReport(orig);
+      XLSX.writeFile(wb,'bao-cao-gia-thanh-tatca.xlsx');
+      setStatus('✓ Đã xuất '+n+' bảng của tab Báo cáo giá thành');
+    } else {
+      setStatus('Tab Doanh thu & Chi phí: hãy bấm nút Xuất/Excel ngay trong tab đó');
+    }
+  }catch(e){setStatus('Lỗi xuất Excel');}
+}
+
 function exportExcel(){
   const wb=XLSX.utils.book_new();const c=computeAll();
   // orders
