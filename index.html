@@ -3904,18 +3904,42 @@ function exportTabReports(){
     const on=document.querySelector('.tab.on');const ti=on?+on.dataset.t:0;
     const wb=XLSX.utils.book_new();let n=0;const used={};
     const addBox=(boxId,name)=>{const box=document.getElementById(boxId);if(!box)return;box.querySelectorAll('table').forEach((t,i)=>{let base=(name+(i>0?('_'+(i+1)):'')).slice(0,28);let k=base,c=1;while(used[k]){k=(base.slice(0,26)+'_'+(++c));}used[k]=1;try{const ws=XLSX.utils.table_to_sheet(t,{raw:true});XLSX.utils.book_append_sheet(wb,ws,k);n++;}catch(e){}});};
+    const setSel=(id,v)=>{const e=document.getElementById(id);if(e){e.value=v;return e.value===String(v);}return false;};
     if(ti===1){
-      const sel=document.getElementById('finStmt');const orig=sel?sel.value:'IS';
-      [['IS','KetQuaKD'],['BS','CanDoiKT'],['CF','LuuChuyenTT'],['SG','CP_BanHang'],['MG','CP_QuanLy'],['RD','CP_RD'],['MF','CP_SXChung'],['ISM','KQKD_thang']].forEach(([k,nm])=>{if(sel){sel.value=k;}renderFin();addBox('finBox',nm);});
-      if(sel){sel.value=orig;}renderFin();
+      const sel=document.getElementById('finStmt');const ys=document.getElementById('finYear');
+      const oS=sel?sel.value:'IS',oY=ys?ys.value:'2026';
+      // Báo cáo kỳ (đã gồm mọi năm theo cột)
+      [['IS','KetQuaKD'],['BS','CanDoiKT'],['CF','LuuChuyenTT']].forEach(([k,nm])=>{if(sel)sel.value=k;renderFin();addBox('finBox',nm);});
+      // Báo cáo theo tháng -> mỗi NĂM 1 sheet
+      [['SG','CP_BanHang'],['MG','CP_QuanLy'],['RD','CP_RD'],['MF','CP_SXChung'],['ISM','KQKD_thang']].forEach(([k,nm])=>{if(sel)sel.value=k;
+        let yrs=(k==='ISM')?Object.keys(IS_MONTHLY||{}):(k==='MF')?((MF_DETAIL&&MF_DETAIL.years)||[]):((EXPDATA[k]&&EXPDATA[k].years)||[]);
+        yrs=yrs.slice().sort();if(!yrs.length)yrs=[oY];
+        yrs.forEach(y=>{if(ys)ys.value=y;renderFin();addBox('finBox',nm+'_'+y);});});
+      if(sel)sel.value=oS;if(ys)ys.value=oY;renderFin();
       XLSX.writeFile(wb,'bao-cao-tai-chinh-tatca.xlsx');
-      setStatus('✓ Đã xuất '+n+' bảng của tab Báo cáo tài chính');
+      setStatus('✓ Đã xuất '+n+' bảng (đủ các năm) của tab Báo cáo tài chính');
     } else if(ti===0){
-      const orig=cur;
-      [['rc','DonGia_TTCP',['rcBox','rrBox']],['rm','LieuCongPhi',['rmBox']],['ag','TuoiTonKho',['agBox']],['rw','Rework',['rwBox']],['sc','PhePham',['scBox']],['cmp','SoSanh',['cmpTbl','cmpCum']]].forEach(([k,nm,boxes])=>{renderReport(k);boxes.forEach((b,i)=>addBox(b,nm+(i>0?('_'+(i+1)):'')));});
-      renderReport(orig);
+      const oCur=cur;
+      const rcy=document.getElementById('rrYear'),rmy=document.getElementById('mgfYear'),agm=document.getElementById('agMonth'),rwy=document.getElementById('rwYear'),scy=document.getElementById('scYear');
+      const oRc=rcy&&rcy.value,oRm=rmy&&rmy.value,oAg=agm&&agm.value,oRw=rwy&&rwy.value,oSc=scy&&scy.value;
+      const yrsOf=sel=>sel?Array.from(sel.options).map(o=>o.value):[];
+      const monsOf=sel=>sel?Array.from(sel.options).map(o=>o.value):[];
+      // 工资制费率 (mỗi năm 1 sheet, bảng全年)
+      yrsOf(rcy).forEach(y=>{if(rcy)rcy.value=y;renderReport('rc');addBox('rrBox','DonGia_'+y);});
+      // 料工费 mỗi năm
+      yrsOf(rmy).forEach(y=>{if(rmy)rmy.value=y;renderReport('rm');addBox('rmBox','LieuCongPhi_'+y);});
+      // tuổi tồn kho mỗi tháng có dữ liệu
+      monsOf(agm).forEach(m=>{if(agm)agm.value=m;renderReport('ag');addBox('agBox','TonKho_'+m);});
+      // rework mỗi năm
+      yrsOf(rwy).forEach(y=>{if(rwy)rwy.value=y;renderReport('rw');addBox('rwBox','Rework_'+y);});
+      // phế phẩm mỗi năm
+      yrsOf(scy).forEach(y=>{if(scy)scy.value=y;renderReport('sc');addBox('scBox','PhePham_'+y);});
+      // so sánh
+      renderReport('cmp');addBox('cmpTbl','SoSanh');addBox('cmpCum','SoSanh_luyke');
+      if(rcy&&oRc)rcy.value=oRc;if(rmy&&oRm)rmy.value=oRm;if(agm&&oAg)agm.value=oAg;if(rwy&&oRw)rwy.value=oRw;if(scy&&oSc)scy.value=oSc;
+      renderReport(oCur);
       XLSX.writeFile(wb,'bao-cao-gia-thanh-tatca.xlsx');
-      setStatus('✓ Đã xuất '+n+' bảng của tab Báo cáo giá thành');
+      setStatus('✓ Đã xuất '+n+' bảng (đủ các năm) của tab Báo cáo giá thành');
     } else {
       setStatus('Tab Doanh thu & Chi phí: hãy bấm nút Xuất/Excel ngay trong tab đó');
     }
