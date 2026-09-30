@@ -3941,7 +3941,14 @@ function exportTabReports(){
       XLSX.writeFile(wb,'bao-cao-gia-thanh-tatca.xlsx');
       setStatus('✓ Đã xuất '+n+' bảng (đủ các năm) của tab Báo cáo giá thành');
     } else {
-      setStatus('Tab Doanh thu & Chi phí: hãy bấm nút Xuất/Excel ngay trong tab đó');
+      const fr=document.getElementById('revFrame');const doc=fr&&(fr.contentDocument||(fr.contentWindow&&fr.contentWindow.document));
+      if(!doc){setStatus('Tab Doanh thu chưa tải xong — đợi 2–3 giây rồi bấm lại');return;}
+      const tables=doc.querySelectorAll('table');
+      if(!tables.length){setStatus('Tab Doanh thu chưa có bảng để xuất (cuộn xuống cho bảng hiện ra rồi bấm lại)');return;}
+      tables.forEach((t,i)=>{let base=('DoanhThu_'+(i+1)).slice(0,28);let k=base,c=1;while(used[k]){k=base+'_'+(++c);}used[k]=1;try{const ws=XLSX.utils.table_to_sheet(t,{raw:true});XLSX.utils.book_append_sheet(wb,ws,k);n++;}catch(e){}});
+      if(!n){setStatus('Không lấy được bảng từ tab Doanh thu');return;}
+      XLSX.writeFile(wb,'doanh-thu-chi-phi-tatca.xlsx');
+      setStatus('✓ Đã xuất '+n+' bảng của tab Doanh thu & Chi phí');
     }
   }catch(e){setStatus('Lỗi xuất Excel');}
 }
